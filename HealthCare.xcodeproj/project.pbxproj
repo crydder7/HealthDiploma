@@ -6,13 +6,36 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D74063BF2F489618004464B9 /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = D74063BE2F489618004464B9 /* FirebaseAI */; };
+		D74063C12F489618004464B9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D74063C02F489618004464B9 /* FirebaseAuth */; };
+		D74063C32F489618004464B9 /* FirebaseAuthCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = D74063C22F489618004464B9 /* FirebaseAuthCombine-Community */; };
+		D74063C52F489618004464B9 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = D74063C42F489618004464B9 /* FirebaseCore */; };
+		D74063C72F489618004464B9 /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = D74063C62F489618004464B9 /* FirebaseDatabase */; };
+		D74063C92F489618004464B9 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = D74063C82F489618004464B9 /* FirebaseFirestore */; };
+		D74063CB2F489618004464B9 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = D74063CA2F489618004464B9 /* FirebaseStorage */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		D7272AD02ED665FC00618C9D /* HealthCare.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HealthCare.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D74063CF2F489A56004464B9 /* Exceptions for "HealthCare" folder in "HealthCare" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D7272ACF2ED665FC00618C9D /* HealthCare */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D7272AD22ED665FC00618C9D /* HealthCare */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D74063CF2F489A56004464B9 /* Exceptions for "HealthCare" folder in "HealthCare" target */,
+			);
 			path = HealthCare;
 			sourceTree = "<group>";
 		};
@@ -23,6 +46,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D74063C72F489618004464B9 /* FirebaseDatabase in Frameworks */,
+				D74063BF2F489618004464B9 /* FirebaseAI in Frameworks */,
+				D74063C32F489618004464B9 /* FirebaseAuthCombine-Community in Frameworks */,
+				D74063C52F489618004464B9 /* FirebaseCore in Frameworks */,
+				D74063CB2F489618004464B9 /* FirebaseStorage in Frameworks */,
+				D74063C12F489618004464B9 /* FirebaseAuth in Frameworks */,
+				D74063C92F489618004464B9 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +95,13 @@
 			);
 			name = HealthCare;
 			packageProductDependencies = (
+				D74063BE2F489618004464B9 /* FirebaseAI */,
+				D74063C02F489618004464B9 /* FirebaseAuth */,
+				D74063C22F489618004464B9 /* FirebaseAuthCombine-Community */,
+				D74063C42F489618004464B9 /* FirebaseCore */,
+				D74063C62F489618004464B9 /* FirebaseDatabase */,
+				D74063C82F489618004464B9 /* FirebaseFirestore */,
+				D74063CA2F489618004464B9 /* FirebaseStorage */,
 			);
 			productName = HealthCare;
 			productReference = D7272AD02ED665FC00618C9D /* HealthCare.app */;
@@ -94,6 +131,9 @@
 			);
 			mainGroup = D7272AC72ED665FA00618C9D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D74063BD2F489618004464B9 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D7272AD12ED665FC00618C9D /* Products */;
 			projectDirPath = "";
@@ -256,11 +296,13 @@
 				DEVELOPMENT_TEAM = 335R5CD3WK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HealthCare/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -288,11 +330,13 @@
 				DEVELOPMENT_TEAM = 335R5CD3WK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HealthCare/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -332,6 +376,55 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D74063BD2F489618004464B9 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D74063BE2F489618004464B9 /* FirebaseAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D74063BD2F489618004464B9 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAI;
+		};
+		D74063C02F489618004464B9 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D74063BD2F489618004464B9 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		D74063C22F489618004464B9 /* FirebaseAuthCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D74063BD2F489618004464B9 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseAuthCombine-Community";
+		};
+		D74063C42F489618004464B9 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D74063BD2F489618004464B9 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		D74063C62F489618004464B9 /* FirebaseDatabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D74063BD2F489618004464B9 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
+		};
+		D74063C82F489618004464B9 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D74063BD2F489618004464B9 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		D74063CA2F489618004464B9 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D74063BD2F489618004464B9 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = D7272AC82ED665FB00618C9D /* Project object */;
 }

@@ -1,17 +1,16 @@
-//
-//  HealthCareApp.swift
-//  HealthCare
-//
-//  Created by lonely. on 11/26/25.
-//
-
 import SwiftUI
+import Firebase
 
 @main
-struct HealthCareApp: App {
+struct MyApp: App {
+    
+    init() {
+        FirebaseApp.configure()
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            LoginView()
         }
     }
 }

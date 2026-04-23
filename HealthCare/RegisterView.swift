@@ -14,6 +14,7 @@ struct RegisterView: View {
     @State var passwordConfirmation: String = ""
     @ObservedObject var authVM = AuthViewModel()
     @State var patient: PatientRegistrationData?
+    @State var errorText: String = ""
     
     private var isPhoneValid: Bool {
         phoneNumber.count == phoneDigitsLimit
@@ -36,10 +37,12 @@ struct RegisterView: View {
                     .onChange(of: phoneNumber) { newValue in
                         phoneNumber = sanitizePhoneNumber(newValue)
                     }
+                    .border(.foreground, width: isPhoneValid ? 0 : 1)
                 TextField("Enter your e-mail adress", text: $email)
                     .textFieldStyle(.roundedBorder)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
+                    .border(.red, width: validateMail(email) ? 0 : 1)
                 Picker("Gender", selection: $gender) {
                     Text("Male")
                     Text("Female")
@@ -53,13 +56,14 @@ struct RegisterView: View {
                 SecureField("Confirm your password", text: $passwordConfirmation)
                     .textFieldStyle(.roundedBorder)
                     .textInputAutocapitalization(.never)
+                    .border(.red, width: password==passwordConfirmation ? 0 : 1)
                 Button("Register") {
                     patient = PatientRegistrationData(name: name, surname: surname, thirdname: thirdname, birthday: birth, gender: gender, phone: phoneNumber)
                     Task{
                         do{
                             try await authVM.signUp(email: email, password: password, registrationData: patient!)
                         } catch{
-                            
+                            errorText = "Ошибка, повторите попытку позже"
                         }
                     }
                 }
@@ -72,11 +76,21 @@ struct RegisterView: View {
     }
 }
 
-#Preview {
-    RegisterView()
-}
+//#Preview {
+//    RegisterView()
+//}
 
 private func sanitizePhoneNumber(_ value: String) -> String {
     let digitsOnly = value.filter(\.isNumber)
     return String(digitsOnly.prefix(11))
+}
+
+private func validateMail(_ value: String) -> Bool {
+    let regex = /^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}$/
+    
+    if let _ = value.wholeMatch(of: regex) {
+        return true
+    } else {
+        return false
+    }
 }

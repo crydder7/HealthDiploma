@@ -5,9 +5,10 @@ struct LoginView: View {
     @State var password: String = ""
     var authVM: AuthViewModel = .init()
     @State var isLoggedIn: Bool = false
-//    @State var patient: Patient?
     @State var user: AppUser?
     @State var patientVM: PatientViewModel?
+    @State var doctorVM: DoctorViewModel?
+    @State var userVM: (any UserProtocol)?
     
     @Environment(\.presentationMode) var presentationMode
     
@@ -15,24 +16,8 @@ struct LoginView: View {
         NavigationStack{
             VStack{
                 GlassEffectContainer{
-//                    NavigationLink {
-//                        RegisterView()
-//                    } label: {
-//                        Label("Doctor login", systemImage: "cross.fill")
-//                    }
-//                    .buttonStyle(.glass)
-//                    .padding()
-//                    .foregroundStyle(.blue)
-//                    
-//                    NavigationLink {
-//                        RegisterView()
-//                    } label: {
-//                        Label("Patient login", systemImage: "person.fill")
-//                    }
-//                    .buttonStyle(.glass)
-//                    .padding()
-//                    .foregroundStyle(.blue)
                     TextField("Enter your email", text: $email)
+                        .textInputAutocapitalization(.never)
                         .textFieldStyle(.roundedBorder)
                         .padding()
                     SecureField("Enter your password", text: $password)
@@ -43,16 +28,18 @@ struct LoginView: View {
                         Task {
                             do{
                                 try await user = authVM.signIn(email: email, password: password)
-                                if let user {
-                                    patientVM = PatientViewModel(user: user)
-                                    isLoggedIn = true
-                                }
-                            } catch{
+                                guard let user = user else { return }
+                                userVM = authVM.authorizeRole(user)!
+                                patientVM = PatientViewModel(user: user)
+                                isLoggedIn = true
+                                UserDefaults.standard.setValue(true, forKey: "isLoggedIn")
+//                                UserDefaults.standard.set(user, forKey: "user")
+                                saveUser(user: user)
+                            } catch {
                                 
                             }
                            
                         }
-                    
                     } label: {
                         Text("Login")
                     }
@@ -62,7 +49,8 @@ struct LoginView: View {
                     
                     NavigationLink(isActive: $isLoggedIn) {
                         if let patientVM {
-                            MainView(patient: patientVM)
+//                            ChartView(patient: patientVM)
+                            MainTabView(user: user!)
                         } else {
                             EmptyView()
                         }
@@ -73,7 +61,7 @@ struct LoginView: View {
                     NavigationLink{
                         RegisterView()
                     } label: {
-                        Label("Sign up for patient", systemImage: "")
+                        Label("Sign up for patient", systemImage: "person.fill")
                     }
                     .buttonStyle(.glass)
                     .padding()
@@ -84,6 +72,13 @@ struct LoginView: View {
     }
 }
 
-#Preview {
-    LoginView()
+//#Preview {
+//    LoginView()
+//}
+
+func saveUser(user: AppUser) {
+    let encoder = JSONEncoder()
+    if let encodedData = try? encoder.encode(user) {
+        UserDefaults.standard.set(encodedData, forKey: "user")
+    }
 }

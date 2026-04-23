@@ -2,6 +2,8 @@ import Foundation
 import FirebaseAuth
 internal import Combine
 import FirebaseFirestore
+import Charts
+//import UserDefaults
 
 class AuthViewModel: ObservableObject {
     
@@ -74,25 +76,39 @@ class AuthViewModel: ObservableObject {
             id: user.uid,
             name: (data["name"] as? String)!,
             surname: (data["surname"] as? String)!,
-            thirdname: (data["thirdname"] as? String)!,
+            thirdname: (data["thirdname"] as? String) ?? "",
             phone: (data["phone"] as? String)!,
             email: user.email!,
             role: role
         )
     }
     
+    func authorizeRole(_ user:AppUser)-> (any UserProtocol)?{
+        if user.role == .patient {
+            let patientVM = PatientViewModel(user: user)
+            return patientVM
+        } else if user.role == .doctor{
+            let doctorVM = DoctorViewModel(user: user)
+            return doctorVM
+        } else {
+            return nil
+        }
+    }
+    
     func signOut() {
         try? Auth.auth().signOut()
         self.user = nil
+        UserDefaults.standard.setValue(false, forKey: "isLoggedIn")
     }
 }
 
 
-class PatientViewModel: ObservableObject{
+class PatientViewModel: ObservableObject, UserProtocol {
     @Published var user: AppUser
+    @Published var date: Date = Date()
+    @Published var measurements: [RawMeasurement] = []
     
     init?(user: AppUser?) {
-        
         guard let user = user else { return nil}
         self.user = user
     }
@@ -115,4 +131,34 @@ class PatientViewModel: ObservableObject{
         let age = calendar.dateComponents([.year], from: birthDate, to: now).year ?? 0
         return max(0, age)
     }
+    
+    func getTodayData(date: Date) async throws {
+        let uid = user.id
+        let db = Firestore.firestore()
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let formatted = df.string(from: date)
+        let docRef = db.collection("patientsData").document(uid).collection("glucose").document(formatted)
+        let snapshot = try await docRef.getDocument()  // async/await вместо замыкания
+        guard let data = snapshot.data(), let measurements = data["measurements"] else { return }
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: measurements) else { return }
+            let decoder = JSONDecoder()
+            let rawMeasurements = try decoder.decode([RawMeasurement].self, from: jsonData)
+            self.measurements = rawMeasurements
+    }
+}
+
+class DoctorViewModel: ObservableObject, UserProtocol{
+    @Published var user: AppUser
+    
+    init?(user: AppUser?) {
+        guard let user = user else { return nil}
+        self.user = user
+    }
+
+    
+}
+
+protocol UserProtocol: ObservableObject{
+    var user: AppUser{ get set }
 }

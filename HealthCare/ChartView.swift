@@ -8,7 +8,7 @@
 import SwiftUI
 import Charts
 
-struct MainView: View {
+struct ChartView: View {
     @ObservedObject var patient: PatientViewModel
     @State var date: Date = Date()
     @State var chartData: [RawMeasurement] = []
@@ -39,6 +39,7 @@ struct MainView: View {
                 Text("Get measurements")
             }
             .glassEffect()
+            .padding()
         }
         .padding()
     }

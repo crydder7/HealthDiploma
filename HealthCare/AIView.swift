@@ -20,16 +20,16 @@
 //}
 //
 //// Модель пациента
-//struct Patient: Identifiable, Hashable {
+//struct PatientStruct: Identifiable, Hashable {
 //    let id = UUID()
 //    let fullName: String
 //    let birthDate: Date
 //    let patientID: String
 //    
 //    static let samplePatients = [
-//        Patient(fullName: "Иванов Алексей Петрович", birthDate: Date().addingTimeInterval(-60*86400*365*45), patientID: "P001"),
-//        Patient(fullName: "Петрова Мария Сергеевна", birthDate: Date().addingTimeInterval(-60*86400*365*38), patientID: "P002"),
-//        Patient(fullName: "Сидоров Дмитрий Иванович", birthDate: Date().addingTimeInterval(-60*86400*365*52), patientID: "P003")
+//        PatientStruct(fullName: "Иванов Алексей Петрович", birthDate: Date().addingTimeInterval(-60*86400*365*45), patientID: "P001"),
+//        PatientStruct(fullName: "Петрова Мария Сергеевна", birthDate: Date().addingTimeInterval(-60*86400*365*38), patientID: "P002"),
+//        PatientStruct(fullName: "Сидоров Дмитрий Иванович", birthDate: Date().addingTimeInterval(-60*86400*365*52), patientID: "P003")
 //    ]
 //}
 //
@@ -55,7 +55,7 @@
 //
 //// Основная View
 //struct GlucoseAnalysisView: View {
-//    @State private var selectedPatient: Patient = Patient.samplePatients[0]
+//    @State private var selectedPatient: PatientStruct = PatientStruct.samplePatients[0]
 //    @State private var selectedDate: Date = Date()
 //    @State private var measurements: [GlucoseMeasurement] = []
 //    @State private var isExpanded: Bool = false
@@ -205,7 +205,7 @@
 //                            .foregroundColor(.secondary)
 //                        Spacer()
 //                        Picker("", selection: $selectedPatient) {
-//                            ForEach(Patient.samplePatients) { patient in
+//                            ForEach(PatientStruct.samplePatients) { patient in
 //                                Text(patient.fullName.components(separatedBy: " ")[0]).tag(patient)
 //                            }
 //                        }

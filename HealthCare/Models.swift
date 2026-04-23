@@ -1,6 +1,7 @@
 import Foundation
+import FirebaseFirestore
 
-struct AppUser {
+struct AppUser: Codable {
     let id: String
     var name: String
     var surname: String
@@ -10,7 +11,7 @@ struct AppUser {
     let role: UserRole
 }
 
-enum UserRole {
+enum UserRole: Codable {
     case patient
     case doctor
     
@@ -53,4 +54,37 @@ struct Doctor{
     var surname: String
     var thirdname: String
     var phone: String
+}
+
+//class GlucoseMeasurement: Codable{
+//    var unit: String
+//    var value: Float
+//    var timestamp: Date
+//    init(unit: String, value: String, timestamp: Timestamp) {
+//        self.unit = unit
+//        self.value = Float(value) ?? 0.0
+//        self.timestamp = Date(timeIntervalSince1970: timestamp)
+//    }
+//}
+
+struct GlucoseData: Codable {
+    let unit: String
+    var value: Double
+}
+
+//struct FirebaseTimestamp: Codable {
+//    let time: String
+//    
+//    
+//}
+
+struct RawMeasurement: Codable, Identifiable {
+    let glucose: GlucoseData
+    var timestamp: Int
+    var id = UUID()
+    
+    enum CodingKeys: String, CodingKey{
+        case glucose = "glucose"
+        case timestamp = "timestamp"
+    }
 }

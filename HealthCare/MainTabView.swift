@@ -8,17 +8,16 @@
 import SwiftUI
 
 struct MainTabView: View {
-    var user: AppUser
+    @EnvironmentObject var user: AppUser
     var body: some View {
         TabView {
             
             Tab("Home", systemImage: "house.fill") {
-                ChartView(patient: PatientViewModel(user: user)!)
+                ChartView(patient: PatientViewModel(user: user.userdata)!)
             }
             
-            
             Tab("Profile", systemImage: "person.fill") {
-                ProfileView(patientVM: PatientViewModel(user: user)!, auth: AuthViewModel())
+                ProfileView(patientVM: PatientViewModel(user: user.userdata)!, auth: AuthViewModel())
             }
             
         }

@@ -3,7 +3,7 @@ import FirebaseAuth
 internal import Combine
 import FirebaseFirestore
 import Charts
-//import UserDefaults
+import CoreML
 
 class AuthViewModel: ObservableObject {
     
@@ -21,6 +21,13 @@ class AuthViewModel: ObservableObject {
         
         let uid = result.user.uid
         let db = Firestore.firestore()
+        
+//        let snapshot = try await db.collection("doctorEmails")
+//            .document("emails")
+//            .getDocument()
+        
+        
+        
         
         try await db.collection("users")
             .document(uid)
@@ -43,7 +50,7 @@ class AuthViewModel: ObservableObject {
         try await result.user.sendEmailVerification()
     }
     
-    func signIn(email: String, password: String) async throws -> AppUser {
+    func signIn(email: String, password: String) async throws -> UserData {
         
         let result = try await Auth.auth()
             .signIn(withEmail: email, password: password)
@@ -69,10 +76,10 @@ class AuthViewModel: ObservableObject {
               let roleString = data["role"] as? String,
               let role = UserRole(rawValue: roleString)
         else {
-            throw NSError(domain: "", code: 404)
+            throw NSError(domain: "", code: 404, userInfo: [NSLocalizedDescriptionKey: "Some error, try again later"])
         }
         
-        return AppUser(
+        return UserData(
             id: user.uid,
             name: (data["name"] as? String)!,
             surname: (data["surname"] as? String)!,
@@ -83,7 +90,7 @@ class AuthViewModel: ObservableObject {
         )
     }
     
-    func authorizeRole(_ user:AppUser)-> (any UserProtocol)?{
+    func authorizeRole(_ user:UserData)-> (any UserProtocol)?{
         if user.role == .patient {
             let patientVM = PatientViewModel(user: user)
             return patientVM
@@ -104,11 +111,11 @@ class AuthViewModel: ObservableObject {
 
 
 class PatientViewModel: ObservableObject, UserProtocol {
-    @Published var user: AppUser
+    @Published var user: UserData
     @Published var date: Date = Date()
     @Published var measurements: [RawMeasurement] = []
     
-    init?(user: AppUser?) {
+    init?(user: UserData?) {
         guard let user = user else { return nil}
         self.user = user
     }
@@ -149,9 +156,9 @@ class PatientViewModel: ObservableObject, UserProtocol {
 }
 
 class DoctorViewModel: ObservableObject, UserProtocol{
-    @Published var user: AppUser
+    @Published var user: UserData
     
-    init?(user: AppUser?) {
+    init?(user: UserData?) {
         guard let user = user else { return nil}
         self.user = user
     }
@@ -160,5 +167,85 @@ class DoctorViewModel: ObservableObject, UserProtocol{
 }
 
 protocol UserProtocol: ObservableObject{
-    var user: AppUser{ get set }
+    var user: UserData{ get set }
+}
+
+
+class ModelPredictViewModel: ObservableObject {
+    @Published var user: UserData
+    @Published var measurements: [RawMeasurement]
+    private var lags: [Double] = [0, 0, 0, 0, 0, 0, 0]
+    private var velocities: [Double] = [0, 0]
+    private var acceleration: Double = 0
+    private var meanRecent: Double = 0
+    private var model = glucose_model()
+    
+    
+    init(user: UserData, measurements: [RawMeasurement]) {
+        self.user = user
+        self.measurements = measurements
+    }
+    
+    func createLags(){
+        let last = measurements.last
+        let prev = measurements[measurements.count-2]
+        let lastDate = Date(timeIntervalSince1970: TimeInterval(last!.timestamp))
+        let prevDate = Date(timeIntervalSince1970: TimeInterval(prev.timestamp))
+        let lastTime = lastDate.formatted(date: .omitted, time: .shortened)
+        let prevTime = prevDate.formatted(date: .omitted, time: .shortened)
+        
+        let minutesLast = lastTime.components(separatedBy: ":").map { Int($0)! }.reduce(0, { $0*60 + $1 })
+        let minutesPrev = prevTime.components(separatedBy: ":").map { Int($0)! }.reduce(0, { $0*60 + $1 })
+        
+        let diff = minutesPrev - minutesLast
+        var minutes = [minutesLast, 0, 0, 0, 0, minutesPrev]
+//        
+//        if diff > 45 {
+//            //TODO: - Evaluate lags for big time gap
+//            
+//        } else {
+        
+            let points: Int = diff/5
+            for i in 1...4{
+                minutes[i] = minutes[i-1] + points
+            }
+            self.lags[0] = (last?.glucose.value)!
+            
+            for i in 1...4 {
+                let x: Double = Double((minutes[i] - minutes[i-1]) / (minutes[5] - minutes[i]))
+                let y = (lags[5] - lags[i-1]) * x
+                lags[i] = lags[i-1] + y
+            }
+            
+            self.lags[5] = prev.glucose.value
+//
+//        }
+        
+    }
+    
+    func createVelocity(){
+        velocities[0] = lags[0] - lags[1]
+        velocities[1] = lags[1] - lags[2]
+    }
+    
+    func createAcceleration(){
+        acceleration = velocities[0] - velocities[1]
+    }
+    
+    func createMeanRecent(){
+        meanRecent = (lags[0] + lags[1] + lags[2]) / 3
+    }
+    
+    func forecast(minutes: Int) -> RawMeasurement {
+        var predict = 0.0
+        do {
+            let p = try model.prediction(lag_1: lags[0], lag_2: lags[1], lag_3: lags[2], lag_4: lags[3], lag_5: lags[4], lag_6: lags[5], time_to_predict: Double(minutes), velocity_1: velocities[0], velocity_2: velocities[1], acceleration: acceleration, mean_recent: meanRecent, sex_female: 0, isDiabet: 0)
+            predict = p.prediction
+        } catch  {
+            
+        }
+        let glucose = GlucoseData(unit: "mmol/L", value: predict)
+        let forecasted = RawMeasurement(glucose: glucose, timestamp: measurements.last!.timestamp + minutes*60)
+        return forecasted
+    }
 }

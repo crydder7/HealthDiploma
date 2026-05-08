@@ -14,11 +14,15 @@ struct RegisterView: View {
     @State var passwordConfirmation: String = ""
     @ObservedObject var authVM = AuthViewModel()
     @State var patient: PatientRegistrationData?
-    @State var errorText: String = ""
-    
+    @State var alertText: String = ""
+    @State var showAlert: Bool = false
+    @State var isVerifyEmailAlert: Bool = false
+    @State var sexValues: [String] = ["Male", "Female"]
     private var isPhoneValid: Bool {
         phoneNumber.count == phoneDigitsLimit
     }
+    
+    //TODO: -Add error handlers, alerts with them and with email message notification
     
     var body: some View {
         VStack{
@@ -34,9 +38,9 @@ struct RegisterView: View {
                 TextField("Enter your phone number", text: $phoneNumber)
                     .textFieldStyle(.roundedBorder)
                     .keyboardType(.numberPad)
-                    .onChange(of: phoneNumber) { newValue in
+                    .onChange(of: phoneNumber, { oldValue, newValue in
                         phoneNumber = sanitizePhoneNumber(newValue)
-                    }
+                    })
                     .border(.foreground, width: isPhoneValid ? 0 : 1)
                 TextField("Enter your e-mail adress", text: $email)
                     .textFieldStyle(.roundedBorder)
@@ -44,8 +48,9 @@ struct RegisterView: View {
                     .textInputAutocapitalization(.never)
                     .border(.red, width: validateMail(email) ? 0 : 1)
                 Picker("Gender", selection: $gender) {
-                    Text("Male")
-                    Text("Female")
+                    ForEach(sexValues, id: \.self){ sex in
+                        Text(sex).tag(sex)
+                    }
                 }
                 .pickerStyle(.menu)
                 DatePicker("Select your birthdate", selection: $birth, displayedComponents: .date)
@@ -62,14 +67,20 @@ struct RegisterView: View {
                     Task{
                         do{
                             try await authVM.signUp(email: email, password: password, registrationData: patient!)
+                            showAlert = true
+                            alertText = "Check your email (also spam) to verification."
                         } catch{
-                            errorText = "Ошибка, повторите попытку позже"
+                            showAlert = true
+                            alertText = "Ошибка, повторите попытку позже"
                         }
                     }
                 }
                 .disabled(!isPhoneValid)
                 .buttonStyle(.glass)
                 .padding()
+                .alert(isPresented: $showAlert) {
+                    Alert(title: Text(alertText))
+                }
             }
         }
         .padding()
@@ -80,17 +91,4 @@ struct RegisterView: View {
 //    RegisterView()
 //}
 
-private func sanitizePhoneNumber(_ value: String) -> String {
-    let digitsOnly = value.filter(\.isNumber)
-    return String(digitsOnly.prefix(11))
-}
 
-private func validateMail(_ value: String) -> Bool {
-    let regex = /^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}$/
-    
-    if let _ = value.wholeMatch(of: regex) {
-        return true
-    } else {
-        return false
-    }
-}

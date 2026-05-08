@@ -1,7 +1,9 @@
 import Foundation
+import SwiftUI
 import FirebaseFirestore
+internal import Combine
 
-struct AppUser: Codable {
+struct UserData: Codable {
     let id: String
     var name: String
     var surname: String
@@ -9,6 +11,14 @@ struct AppUser: Codable {
     var phone: String
     let email: String
     let role: UserRole
+}
+
+class AppUser: ObservableObject{
+    @Published public var userdata: UserData?
+    
+    init(userdata: UserData?) {
+        self.userdata = userdata
+    }
 }
 
 enum UserRole: Codable {
@@ -28,7 +38,7 @@ enum UserRole: Codable {
 }
 
 struct Patient {
-    var user: AppUser
+    var user: UserData
     var name: String
     var surname: String
     var thirdname: String
@@ -49,34 +59,19 @@ struct PatientRegistrationData {
 }
 
 struct Doctor{
-    var user: AppUser
+    var user: UserData
     var name: String
     var surname: String
     var thirdname: String
     var phone: String
 }
 
-//class GlucoseMeasurement: Codable{
-//    var unit: String
-//    var value: Float
-//    var timestamp: Date
-//    init(unit: String, value: String, timestamp: Timestamp) {
-//        self.unit = unit
-//        self.value = Float(value) ?? 0.0
-//        self.timestamp = Date(timeIntervalSince1970: timestamp)
-//    }
-//}
 
 struct GlucoseData: Codable {
     let unit: String
     var value: Double
 }
 
-//struct FirebaseTimestamp: Codable {
-//    let time: String
-//    
-//    
-//}
 
 struct RawMeasurement: Codable, Identifiable {
     let glucose: GlucoseData
@@ -86,5 +81,79 @@ struct RawMeasurement: Codable, Identifiable {
     enum CodingKeys: String, CodingKey{
         case glucose = "glucose"
         case timestamp = "timestamp"
+    }
+}
+
+
+func loadUser() -> UserData? {
+    if let data = UserDefaults.standard.data(forKey: "user") {
+        let decoder = JSONDecoder()
+        if let user = try? decoder.decode(UserData.self, from: data) {
+            return user
+        }
+    }
+    return nil
+}
+
+func saveUser(user: UserData) {
+    let encoder = JSONEncoder()
+    if let encodedData = try? encoder.encode(user) {
+        UserDefaults.standard.set(encodedData, forKey: "user")
+    }
+}
+
+func sanitizePhoneNumber(_ value: String) -> String {
+    let digitsOnly = value.filter(\.isNumber)
+    return String(digitsOnly.prefix(11))
+}
+
+func validateMail(_ value: String) -> Bool {
+    let regex = /^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}$/
+    
+    if let _ = value.wholeMatch(of: regex) {
+        return true
+    } else {
+        return false
+    }
+}
+
+
+enum sexPicker {
+    case male
+    case female
+}
+
+
+enum AppScreen: Hashable {
+    case home
+//    case profile(String)
+//    case settings
+//    case details(item: String)
+    case login
+    case register
+    
+}
+
+class Router: ObservableObject {
+    @Published var path = NavigationPath()
+    @Published var rootView: AppScreen = .login
+    
+    func navigate(to screen: AppScreen) {
+        path.append(screen)
+    }
+    
+    func goBack(){
+        path.removeLast()
+    }
+    
+    func popToRoot() {
+//        path.removeLast(path.count)
+        path = NavigationPath()
+//        path.append(rootView)
+    }
+    
+    func becomeRoot(screen: AppScreen){
+        path = NavigationPath()
+        rootView = screen
     }
 }

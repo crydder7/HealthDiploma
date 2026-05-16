@@ -20,7 +20,9 @@ struct DoctorChartView: View {
     @State var showAlert: Bool = false
     @State var alerText: String = ""
     @EnvironmentObject var pickedPatient: PickedPatient
-    @State private var loadingTask: Task<Void, Never>?
+//    @State private var loadingTask: Task<Void, Never>?
+    @State private var selectedTime: Date?
+    @State private var selectedGlucose: Double?
     
     var body: some View {
         VStack{
@@ -66,7 +68,6 @@ struct DoctorChartView: View {
                 LineMark(x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))) , y: .value("glucose", Double(measure.glucose.value)))
                     .symbol(.circle)
                     .foregroundStyle(.red)
-                    
             }
             .chartXAxis(.visible)
             .chartYAxis(.visible)

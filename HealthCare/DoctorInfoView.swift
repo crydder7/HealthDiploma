@@ -28,25 +28,35 @@ struct DoctorInfoView: View {
                     LabeledContent("Gender", value: pickedPatient.gender ?? "-")
                         .font(.title3)
                     Divider()
-                    LabeledContent("Email", value: pickedPatient.email ?? "-")
-                        .underline(true)
-                        .foregroundStyle(.blue)
-                        .font(.title3)
-                        .onTapGesture {
-                            UIPasteboard.general.string = pickedPatient.email
-                            alerText = "Email cкопирован"
-                            showAlert = true
+                    if let email = pickedPatient.email, let url = URL(string:"mailto:\(email)"){
+                        HStack{
+                            Text("Email")
+                                .font(.title3)
+                            Spacer()
+                            Link(destination: url) {
+                                Text(email)
+                                    .font(.title3)
+                            }
                         }
+                    } else {
+                        LabeledContent("Email", value: "-")
+                            .font(.title3)
+                    }
                     Divider()
-                    LabeledContent("Phone", value: pickedPatient.phone ?? "-")
-                        .font(.title3)
-                        .underline(true)
-                        .foregroundStyle(.blue)
-                        .onTapGesture {
-                            UIPasteboard.general.string = pickedPatient.phone
-                            alerText = "Номер телефона скопирован"
-                            showAlert = true
+                    if let phone = pickedPatient.phone, let url = URL(string: "tel://\(phone)") {
+                        HStack{
+                            Text("Phone")
+                                .font(.title3)
+                            Spacer()
+                            Link(destination: url) {
+                                Text(phone)
+                                    .font(.title3)
+                            }
                         }
+                    } else {
+                        LabeledContent("Phone", value: "-")
+                            .font(.title3)
+                    }
                     Divider()
                     LabeledContent("Birthday", value: pickedPatient.birthday ?? "-")
                         .font(.title3)

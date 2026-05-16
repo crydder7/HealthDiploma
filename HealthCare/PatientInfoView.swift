@@ -24,25 +24,35 @@ struct PatientInfoView: View {
                     LabeledContent("Full name", value: docInfo.fullName)
                         .font(.title3)
                     Divider()
-                    LabeledContent("Email", value: docInfo.email ?? "-")
-                        .font(.title3)
-                        .underline(true)
-                        .foregroundStyle(.blue)
-                        .onTapGesture {
-                            UIPasteboard.general.string = docInfo.email
-                            alerText = "Email скопирован"
-                            showAlert = true
+                    if let email = docInfo.email, let url = URL(string:"mailto:\(email)"){
+                        HStack{
+                            Text("Email")
+                                .font(.title3)
+                            Spacer()
+                            Link(destination: url) {
+                                Text(email)
+                                    .font(.title3)
+                            }
                         }
+                    } else {
+                        LabeledContent("Email", value: "-")
+                            .font(.title3)
+                    }
                     Divider()
-                    LabeledContent("Phone", value: docInfo.phone ?? "-")
-                        .font(.title3)
-                        .underline(true)
-                        .foregroundStyle(.blue)
-                        .onTapGesture {
-                            UIPasteboard.general.string = docInfo.phone
-                            alerText = "Номер телефона скопирован"
-                            showAlert = true
+                    if let phone = docInfo.phone, let url = URL(string: "tel://\(phone)") {
+                        HStack{
+                            Text("Phone")
+                                .font(.title3)
+                            Spacer()
+                            Link(destination: url) {
+                                Text(phone)
+                                    .font(.title3)
+                            }
                         }
+                    } else {
+                        LabeledContent("Phone", value: "-")
+                            .font(.title3)
+                    }
                     Divider()
                     LabeledContent("Birthday", value: docInfo.birthday ?? "-")
                         .font(.title3)

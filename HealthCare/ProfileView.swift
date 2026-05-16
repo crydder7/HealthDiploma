@@ -9,32 +9,57 @@ import SwiftUI
 import FirebaseAuth
 
 struct ProfileView: View {
-    @ObservedObject var patientVM: PatientViewModel
-    @ObservedObject var auth: AuthViewModel
-    @State var isLoggedOut: Bool = false
+    @EnvironmentObject var user: AppUser
+    @ObservedObject var auth: AuthViewModel = AuthViewModel()
     @EnvironmentObject var router: Router
+    @State var isPresented: Bool = false
+    @State var alertText: String = ""
     
     var body: some View {
         VStack{
-            Button {
-                router.popToRoot()
-                auth.signOut()
-                isLoggedOut = true
-                UserDefaults.standard.setValue(false, forKey: "isLoggedIn")
-            } label: {
-                Text("Log out")
-            }
-            .padding()
-            .glassEffect()
+            Text("Hello, \(user.userdata?.name ?? "NoName")!")
+                .font(.title2)
             
-            Button {
+            Label("ID: \(user.userdata?.id ?? "NoData")", systemImage: "document.on.document")
+                .onTapGesture {
+                    UIPasteboard.general.string = user.userdata?.id
+                    isPresented = true
+                    if user.userdata?.role == .doctor {
+                        alertText = "Никому не разглашайте свой ID!"
+                    } else if user.userdata?.role == .patient {
+                        alertText = "Отправьте его только своему врачу!"
+                    }
+                }
+                .alert(isPresented: $isPresented) {
+                    Alert(title: Text("Ваш ID скопирован"), message: Text(alertText))
+                }
+            
+            Spacer()
+            
+            HStack{
+                Button {
+                    
+                } label: {
+                    Label("Change password", systemImage: "key.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .padding()
+                .glassEffect()
                 
-            } label: {
-                Text("Change password")
+                Button {
+                    //TODO: - перенести все внутрь auth.signOut()
+                    router.becomeRoot(screen: .login)
+                    user.userdata = nil
+                    auth.signOut()
+                } label: {
+                    Label("Log out", systemImage: "door.right.hand.open")
+                        .frame(maxWidth: .infinity)
+                }
+                .padding()
+                .glassEffect()
             }
-            .padding()
-            .glassEffect()
         }
+        .padding()
     }
 }
 

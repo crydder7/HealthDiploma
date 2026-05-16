@@ -14,10 +14,11 @@ struct RegisterView: View {
     @State var passwordConfirmation: String = ""
     @ObservedObject var authVM = AuthViewModel()
     @State var patient: PatientRegistrationData?
-    @State var alertText: String = ""
+    @State var alertText: String = "Something wrong"
     @State var showAlert: Bool = false
     @State var isVerifyEmailAlert: Bool = false
     @State var sexValues: [String] = ["Male", "Female"]
+    @State var isLoading: Bool = false
     private var isPhoneValid: Bool {
         phoneNumber.count == phoneDigitsLimit
     }
@@ -26,27 +27,39 @@ struct RegisterView: View {
     
     var body: some View {
         VStack{
-            Label("Patient sign up", systemImage: "cross.fill")
+            Label("Sign up", systemImage: "cross.fill")
+                .font(.title)
                 .padding()
+            Spacer()
             GlassEffectContainer{
                 TextField("Enter your name", text: $name)
-                    .textFieldStyle(.roundedBorder)
+                    .padding()
+                    .glassEffect()
+                    .autocorrectionDisabled()
                 TextField("Enter your surname", text: $surname)
-                    .textFieldStyle(.roundedBorder)
+                    .padding()
+                    .glassEffect()
+                    .autocorrectionDisabled()
                 TextField("Enter your thirdname", text: $thirdname)
-                    .textFieldStyle(.roundedBorder)
+                    .padding()
+                    .glassEffect()
+                    .autocorrectionDisabled()
                 TextField("Enter your phone number", text: $phoneNumber)
-                    .textFieldStyle(.roundedBorder)
+                    .padding()
                     .keyboardType(.numberPad)
+                    .autocorrectionDisabled()
                     .onChange(of: phoneNumber, { oldValue, newValue in
                         phoneNumber = sanitizePhoneNumber(newValue)
                     })
                     .border(.foreground, width: isPhoneValid ? 0 : 1)
+                    .glassEffect()
                 TextField("Enter your e-mail adress", text: $email)
-                    .textFieldStyle(.roundedBorder)
+                    .padding()
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
                     .border(.red, width: validateMail(email) ? 0 : 1)
+                    .glassEffect()
                 Picker("Gender", selection: $gender) {
                     ForEach(sexValues, id: \.self){ sex in
                         Text(sex).tag(sex)
@@ -56,27 +69,46 @@ struct RegisterView: View {
                 DatePicker("Select your birthdate", selection: $birth, displayedComponents: .date)
                     .datePickerStyle(.compact)
                 SecureField("Enter your password", text: $password)
-                    .textFieldStyle(.roundedBorder)
+                    .padding()
+                    .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
+                    .glassEffect()
                 SecureField("Confirm your password", text: $passwordConfirmation)
-                    .textFieldStyle(.roundedBorder)
+                    .padding()
+                    .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .border(.red, width: password==passwordConfirmation ? 0 : 1)
-                Button("Register") {
+                    .glassEffect()
+                Spacer()
+                
+                Button {
                     patient = PatientRegistrationData(name: name, surname: surname, thirdname: thirdname, birthday: birth, gender: gender, phone: phoneNumber)
                     Task{
                         do{
+                            isLoading = true
                             try await authVM.signUp(email: email, password: password, registrationData: patient!)
+                            alertText = "Check your email (also spam) to finish verification."
+                            isLoading = false
                             showAlert = true
-                            alertText = "Check your email (also spam) to verification."
-                        } catch{
+                        } catch {
+                            isLoading = false
+                            alertText = error.localizedDescription
                             showAlert = true
-                            alertText = "Ошибка, повторите попытку позже"
                         }
                     }
+                } label: {
+                    Label("Register", systemImage: "checkmark.circle.fill")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 30)
                 }
                 .disabled(!isPhoneValid)
                 .buttonStyle(.glass)
+                .overlay(content: {
+                    if isLoading {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                    }
+                })
                 .padding()
                 .alert(isPresented: $showAlert) {
                     Alert(title: Text(alertText))

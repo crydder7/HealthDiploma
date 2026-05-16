@@ -131,19 +131,24 @@ enum AppScreen: Hashable {
 //    case details(item: String)
     case login
     case register
-    
 }
 
 class Router: ObservableObject {
     @Published var path = NavigationPath()
     @Published var rootView: AppScreen = .login
     
+    init(screen: AppScreen){
+        rootView = screen
+    }
+    
     func navigate(to screen: AppScreen) {
         path.append(screen)
     }
     
     func goBack(){
-        path.removeLast()
+        if path.count > 0 {
+            path.removeLast()
+        }
     }
     
     func popToRoot() {

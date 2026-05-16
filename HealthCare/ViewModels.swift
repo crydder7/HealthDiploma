@@ -16,38 +16,56 @@ class AuthViewModel: ObservableObject {
     
     
     func signUp(email: String, password: String, registrationData: PatientRegistrationData) async throws {
-        let result = try await Auth.auth()
-            .createUser(withEmail: email, password: password)
+        var uid = ""
+        do{
+            let result = try await Auth.auth()
+                .createUser(withEmail: email, password: password)
+            uid = result.user.uid
+            try await result.user.sendEmailVerification()
+        } catch {
+            throw NSError(domain: "Error", code: 404, userInfo: [NSLocalizedDescriptionKey: "Some error, try again later"])
+        }
         
-        let uid = result.user.uid
+        
+//        let uid = result.user.uid
         let db = Firestore.firestore()
         
-//        let snapshot = try await db.collection("doctorEmails")
-//            .document("emails")
-//            .getDocument()
+        let snapshot = try await db.collection("doctorData")
+            .document("emails")
+            .getDocument()
+        
+        if let data = snapshot.data(), data[email] as? String == "doctor"{
+            try await db.collection("users")
+                .document(uid)
+                .setData([
+                    "name": registrationData.name,
+                    "surname": registrationData.surname,
+                    "thirdname": registrationData.thirdname,
+                    "email": email,
+                    "phone": registrationData.phone,
+                    "role": "doctor"
+                ])
+        } else {
+            try await db.collection("users")
+                .document(uid)
+                .setData([
+                    "name": registrationData.name,
+                    "surname": registrationData.surname,
+                    "thirdname": registrationData.thirdname,
+                    "email": email,
+                    "phone": registrationData.phone,
+                    "role": "patient"
+                ])
+            
+            try await db.collection("patientsData")
+                .document(uid)
+                .setData([
+                    "birthday": Timestamp(date: registrationData.birthday),
+                    "gender": registrationData.gender
+                ])
+        }
         
         
-        
-        
-        try await db.collection("users")
-            .document(uid)
-            .setData([
-                "name": registrationData.name,
-                "surname": registrationData.surname,
-                "thirdname": registrationData.thirdname,
-                "email": email,
-                "phone": registrationData.phone,
-                "role": "patient"
-            ])
-        
-        try await db.collection("patientsData")
-            .document(uid)
-            .setData([
-                "birthday": Timestamp(date: registrationData.birthday),
-                "gender": registrationData.gender
-            ])
-        
-        try await result.user.sendEmailVerification()
     }
     
     func signIn(email: String, password: String) async throws -> UserData {
@@ -106,6 +124,13 @@ class AuthViewModel: ObservableObject {
         try? Auth.auth().signOut()
         self.user = nil
         UserDefaults.standard.setValue(false, forKey: "isLoggedIn")
+        UserDefaults.standard.removeObject(forKey: "user")
+    }
+    
+    func changePassword(email: String) throws {
+        Auth.auth().sendPasswordReset(withEmail: email) { error in
+            
+        }
     }
 }
 
@@ -146,23 +171,106 @@ class PatientViewModel: ObservableObject, UserProtocol {
         df.dateFormat = "yyyy-MM-dd"
         let formatted = df.string(from: date)
         let docRef = db.collection("patientsData").document(uid).collection("glucose").document(formatted)
-        let snapshot = try await docRef.getDocument()  // async/await вместо замыкания
-        guard let data = snapshot.data(), let measurements = data["measurements"] else { return }
+        let snapshot = try await docRef.getDocument()
+        guard let data = snapshot.data(), let measurements = data["measurements"] else { throw NSError(domain: "", code: 228, userInfo: [NSLocalizedDescriptionKey: "Нет измерений за выбранную дату"]) }
         guard let jsonData = try? JSONSerialization.data(withJSONObject: measurements) else { return }
-            let decoder = JSONDecoder()
-            let rawMeasurements = try decoder.decode([RawMeasurement].self, from: jsonData)
-            self.measurements = rawMeasurements
+        let decoder = JSONDecoder()
+        let rawMeasurements = try decoder.decode([RawMeasurement].self, from: jsonData)
+        self.measurements = rawMeasurements
+    }
+    
+    func getDocInfo(_ docInfo: DoctorInfo) async throws{
+        let uid = user.id
+        let db = Firestore.firestore()
+        let snapshot = try await db.collection("patientsData").document(uid)
+            .getDocument()
+        guard let data = snapshot.data(), let docID = data["doctorID"] else { throw NSError(domain: "", code: 228, userInfo: [NSLocalizedDescriptionKey: "Нет лечащего врача"]) }
+        let snapshot2 = try await db.collection("users").document(docID as! String)
+            .getDocument()
+        guard let data2 = snapshot2.data() else { throw NSError(domain: "", code: 228, userInfo: [NSLocalizedDescriptionKey: "Нет данных о  враче"]) }
+        docInfo.fullName = "\(data2["surname"] as? String ?? "") \(data2["name"] as? String ?? "") \(data2["thirdname"] as? String ?? "")"
+        let birthday = data2["birthday"] as? Timestamp
+        docInfo.email = data2["email"] as? String
+        let date = birthday?.dateValue()
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.day,.month,.year], from: date ?? Date())
+        docInfo.birthday = "\(components.day ?? 0)/\(components.month ?? 0)/\(components.year ?? 0)"
+        docInfo.email = data2["email"] as? String
+        docInfo.phone = data2["phone"] as? String
     }
 }
 
 class DoctorViewModel: ObservableObject, UserProtocol{
     @Published var user: UserData
+    @Published var patients: [DoctorPatientDisplay] = []
+    @Published var uids: [String] = []
+    @Published var patientsMeasurements: [RawMeasurement] = []
     
     init?(user: UserData?) {
         guard let user = user else { return nil}
         self.user = user
     }
 
+    func loadPatients() async throws -> [DoctorPatientDisplay]{
+        self.patients = []
+        self.uids = []
+        let db = Firestore.firestore()
+        
+        do{
+            let snapshot = try await db.collection("doctorData")
+                .document(user.id)
+                .getDocument()
+            for i in snapshot.data()! {
+                let key = i.key.replacing(" ", with: "")
+                self.uids.append(key)
+            }
+        } catch {
+            
+        }
+        
+        for i in uids{
+            do {
+                let snapshot = try await db.collection("users")
+                    .document(i)
+                    .getDocument()
+                let snap2 = try await db.collection("patientsData")
+                    .document(i)
+                    .getDocument()
+                guard let data = snapshot.data() else { throw NSError(domain: "", code: 404, userInfo: [NSLocalizedDescriptionKey: "No data"])}
+                guard let data2 = snap2.data() else { throw NSError(domain: "", code: 404, userInfo: [NSLocalizedDescriptionKey: "No data"]) }
+                let fullName = "\(data["surname"] as? String ?? " ") \(data["name"] as? String ?? " ") \(data["thirdname"] as? String ?? " ")"
+                let birthday = data2["birthday"] as? Timestamp
+                let date = birthday?.dateValue()
+                let calendar = Calendar.current
+                let components = calendar.dateComponents([.day,.month,.year], from: date ?? Date())
+                let gender = data2["gender"] as? String ?? " "
+                let email = data["email"] as? String ?? " "
+                let phone = data["phone"] as? String ?? " "
+                let patient = DoctorPatientDisplay(fullName: fullName, uid: i, birthday: "\(components.day ?? 0)/\(components.month ?? 0)/\(components.year ?? 0)", gender: gender, phone: phone, email: email)
+                
+                self.patients.append(patient)
+            } catch {
+                throw NSError(domain: "", code: 404, userInfo: [NSLocalizedDescriptionKey: "Error"])
+            }
+        }
+        
+        return self.patients
+    }
+    
+    func getTodayData(date: Date, uid: String) async throws {
+        self.patientsMeasurements = []
+        let db = Firestore.firestore()
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let formatted = df.string(from: date)
+        let docRef = db.collection("patientsData").document(uid).collection("glucose").document(formatted)
+        let snapshot = try await docRef.getDocument()
+        guard let data = snapshot.data(), let measurements = data["measurements"] else { throw NSError(domain: "", code: 228, userInfo: [NSLocalizedDescriptionKey: "Нет измерений за выбранную дату"]) }
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: measurements) else { return }
+        let decoder = JSONDecoder()
+        let rawMeasurements = try decoder.decode([RawMeasurement].self, from: jsonData)
+        self.patientsMeasurements = rawMeasurements
+    }
     
 }
 
@@ -172,7 +280,7 @@ protocol UserProtocol: ObservableObject{
 
 
 class ModelPredictViewModel: ObservableObject {
-    @Published var user: UserData
+//    @Published var user: UserData
     @Published var measurements: [RawMeasurement]
     private var lags: [Double] = [0, 0, 0, 0, 0, 0, 0]
     private var velocities: [Double] = [0, 0]
@@ -181,8 +289,7 @@ class ModelPredictViewModel: ObservableObject {
     private var model = glucose_model()
     
     
-    init(user: UserData, measurements: [RawMeasurement]) {
-        self.user = user
+    init(measurements: [RawMeasurement]) {
         self.measurements = measurements
     }
     
@@ -236,7 +343,12 @@ class ModelPredictViewModel: ObservableObject {
         meanRecent = (lags[0] + lags[1] + lags[2]) / 3
     }
     
-    func forecast(minutes: Int) -> RawMeasurement {
+    func forecast(minutes: Int) throws -> RawMeasurement {
+        guard measurements.count > 1 else { throw NSError(domain: "", code: 404, userInfo: [NSLocalizedDescriptionKey: "Some error, try again later"])}
+        createLags()
+        createVelocity()
+        createAcceleration()
+        createMeanRecent()
         var predict = 0.0
         do {
             let p = try model.prediction(lag_1: lags[0], lag_2: lags[1], lag_3: lags[2], lag_4: lags[3], lag_5: lags[4], lag_6: lags[5], time_to_predict: Double(minutes), velocity_1: velocities[0], velocity_2: velocities[1], acceleration: acceleration, mean_recent: meanRecent, sex_female: 0, isDiabet: 0)
@@ -247,5 +359,53 @@ class ModelPredictViewModel: ObservableObject {
         let glucose = GlucoseData(unit: "mmol/L", value: predict)
         let forecasted = RawMeasurement(glucose: glucose, timestamp: measurements.last!.timestamp + minutes*60)
         return forecasted
+    }
+}
+
+
+struct DoctorPatientDisplay: Hashable, Identifiable{
+    let id = UUID()
+    var fullName: String
+    var uid: String
+    var birthday: String?
+    var gender: String?
+    var phone: String?
+    var email: String?
+}
+
+class PickedPatient: ObservableObject, Identifiable{
+    var id = UUID()
+    @Published var fullName: String
+    @Published var uid: String
+    @Published var birthday: String?
+    @Published var gender: String?
+    @Published var phone: String?
+    @Published var email: String?
+     
+    init(fullName: String, uid: String, birthday: String? = nil, gender: String? = nil, phone: String? = nil, email: String? = nil) {
+        self.fullName = fullName
+        self.uid = uid
+        self.birthday = birthday
+        self.gender = gender
+        self.phone = phone
+        self.email = email
+    }
+}
+
+class DoctorInfo: ObservableObject, Identifiable {
+    var id = UUID()
+    @Published var fullName: String
+    @Published var email: String?
+    @Published var birthday: String?
+    @Published var gender: String?
+    @Published var phone: String?
+    
+    init(id: UUID = UUID(), fullName: String, email: String? = nil, birthday: String? = nil, gender: String? = nil, phone: String? = nil) {
+        self.id = id
+        self.fullName = fullName
+        self.email = email
+        self.birthday = birthday
+        self.gender = gender
+        self.phone = phone
     }
 }

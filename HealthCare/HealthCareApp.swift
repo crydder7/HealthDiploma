@@ -2,52 +2,52 @@ import SwiftUI
 import Firebase
 internal import Combine
 
-//TODO: -Create class to control Views
-//@MainActor class ViewController: ObservableObject {
-//    static let shared = ViewController(isLoggedIn: UserDefaults.standard.bool(forKey: "isLoggedIn"), user: UserDefaults.standard.object(forKey: "user") as? AppUser)
-//    @Published var isLoggedIn: Bool
-//    @Published var user: AppUser?
-//    private var authVM = AuthViewModel()
-//    
-//    private init(isLoggedIn: Bool, user: AppUser?) {
-//        self.isLoggedIn = isLoggedIn
-//        self.user = user
-//    }
-//    
-//    func logIn(email: String, password: String) async throws -> AppUser? {
-//        Task{
-//            let user = try await authVM.signIn(email: email, password: password)
-//            self.isLoggedIn = true
-//        }
-//        return user
-//    }
-//    
-//    func logOut(){
-//        self.authVM.signOut()
-//        self.isLoggedIn = false
-//    }
-//}
-
-
 @main
 struct MyApp: App {
     
     @StateObject var user: AppUser = AppUser(userdata: loadUser())
-    @StateObject var router: Router = Router()
+    @StateObject var router: Router
+    
     init() {
         FirebaseApp.configure()
+        
+        let savedUser = loadUser()
+        let isLoggedIn = savedUser != nil && UserDefaults.standard.bool(forKey: "isLoggedIn")
+
+        _user = StateObject(wrappedValue: AppUser(userdata: savedUser))
+        _router = StateObject(wrappedValue: Router(screen: isLoggedIn ? .home : .login))
     }
     
     var body: some Scene {
         WindowGroup {
-//            if user.userdata != nil {
-//                NavigationStack{
-//                    MainTabView(user: AppUser(userdata: loadUser()))
-//                }
-//            } else {
             NavigationStack(path: $router.path){
-                LoginView()
+                ZStack{
+                    switch router.rootView {
+                     case .home:
+                         MainTabView()
+                            .transition(.slide)
+                     case .login:
+                         LoginView()
+                            .transition(.slide)
+                     case .register:
+                         RegisterView()
+                            .transition(.slide)
+                     }
+                }
+                .animation(.bouncy(duration: 0.25), value: router.rootView)
+                .navigationDestination(for: AppScreen.self) { screen in
+                    switch screen{
+                    case .home: if user.userdata != nil {
+                        MainTabView()
+                    } else {
+                        LoginView()
+                    }
+                    case .login: LoginView()
+                    case .register: RegisterView()
+                    }
+                }
             }
+           
 //            }
         }
         .environmentObject(user)

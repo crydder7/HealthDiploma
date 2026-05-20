@@ -281,15 +281,23 @@ protocol UserProtocol: ObservableObject{
 
 class ModelPredictViewModel: ObservableObject {
 //    @Published var user: UserData
+    
     @Published var measurements: [RawMeasurement]
+    @Published var userId: String = ""
     private var lags: [Double] = [0, 0, 0, 0, 0, 0, 0]
     private var velocities: [Double] = [0, 0]
     private var acceleration: Double = 0
     private var meanRecent: Double = 0
-    private var model = glucose_model()
+    private var isFemale: Double = 0
+    private var isDiabet: Double = 0
+    private var foodImpact: Double = 0
+    var cfg = MLModelConfiguration()
+    private var model = delta_model()
     
     
-    init(measurements: [RawMeasurement]) {
+    init(userId: String, measurements: [RawMeasurement]) {
+//        self.user = user
+        self.userId = userId
         self.measurements = measurements
     }
     
@@ -317,17 +325,36 @@ class ModelPredictViewModel: ObservableObject {
                 minutes[i] = minutes[i-1] + points
             }
             self.lags[0] = (last?.glucose.value)!
-            
+            self.lags[5] = prev.glucose.value
             for i in 1...4 {
-                let x: Double = Double((minutes[i] - minutes[i-1]) / (minutes[5] - minutes[i]))
-                let y = (lags[5] - lags[i-1]) * x
-                lags[i] = lags[i-1] + y
+                let numerator = Double(minutes[i] - minutes[i - 1])
+                let denominator = Double(minutes[5] - minutes[i])
+                
+                guard denominator != 0 else { continue }
+                
+                let x = numerator / denominator
+                let y = (lags[5] - lags[i - 1]) * x
+                lags[i] = lags[i - 1] + y
+//                let x: Double = Double((minutes[i] - minutes[i-1]) / (minutes[5] - minutes[i]))
+//                let y = (lags[5] - lags[i-1]) * x
+//                lags[i] = lags[i-1] + y
             }
             
-            self.lags[5] = prev.glucose.value
-//
+            
 //        }
         
+    }
+    
+    func getSex() async throws{
+        let db = Firestore.firestore()
+        let snapshot = try await db.collection("patientsData").document(userId)
+            .getDocument()
+        guard let sex = snapshot.data()?["gender"] as? String else { throw NSError(domain: "Error", code: 404, userInfo: [NSLocalizedDescriptionKey:"No sex data"])}
+        switch sex {
+        case "Male": self.isFemale = 0
+        case "Female": self.isFemale = 1
+        default: self.isFemale = 0
+        }
     }
     
     func createVelocity(){
@@ -343,22 +370,56 @@ class ModelPredictViewModel: ObservableObject {
         meanRecent = (lags[0] + lags[1] + lags[2]) / 3
     }
     
-    func forecast(minutes: Int) throws -> RawMeasurement {
+    func forecast(minutes: Int) throws -> [RawMeasurement] {
         guard measurements.count > 1 else { throw NSError(domain: "", code: 404, userInfo: [NSLocalizedDescriptionKey: "Some error, try again later"])}
+//        TODO: - CHANGE isDiabet to variable from firebase
+        self.isDiabet = 0
+        Task {
+            try await getSex()
+        }
+        .escalatePriority(to: .high)
         createLags()
         createVelocity()
         createAcceleration()
         createMeanRecent()
-        var predict = 0.0
+        var predict = [Double]()
         do {
-            let p = try model.prediction(lag_1: lags[0], lag_2: lags[1], lag_3: lags[2], lag_4: lags[3], lag_5: lags[4], lag_6: lags[5], time_to_predict: Double(minutes), velocity_1: velocities[0], velocity_2: velocities[1], acceleration: acceleration, mean_recent: meanRecent, sex_female: 0, isDiabet: 0)
-            predict = p.prediction
+            for i in [5, 10, 15, 30]{
+                let p = try model.prediction(lag_1: lags[0], lag_2: lags[1], lag_3: lags[2], lag_4: lags[3], lag_5: lags[4], lag_6: lags[5], timeToPredict: Double(i), velocity_1: velocities[0], velocity_2: velocities[1], acceleration: acceleration, meanRecent: meanRecent, isFemale: self.isFemale, isDiabet: self.isDiabet, foodImpact: measurements.last?.foodImpact ?? 0)
+                predict.append(p.predicted_delta)
+            }
+//            let p = try model.prediction(lag_1: lags[0], lag_2: lags[1], lag_3: lags[2], lag_4: lags[3], lag_5: lags[4], lag_6: lags[5], timeToPredict: Double(minutes), velocity_1: velocities[0], velocity_2: velocities[1], acceleration: acceleration, meanRecent: meanRecent, isFemale: self.isFemale, isDiabet: self.isDiabet, foodImpact: measurements.last?.foodImpact ?? 0)
+//            predict = p.predicted_delta
         } catch  {
             
         }
-        let glucose = GlucoseData(unit: "mmol/L", value: predict)
-        let forecasted = RawMeasurement(glucose: glucose, timestamp: measurements.last!.timestamp + minutes*60)
-        return forecasted
+        let times = [5,10,15,30]
+        var forecasts = [RawMeasurement]()
+        var glucoses = [GlucoseData]()
+        for i in 0...3{
+            predict[i] = predict[i] + measurements.last!.glucose.value
+            glucoses.append(GlucoseData(unit: "mmol/L", value: predict[i]))
+        }
+        for i in 0...3{
+            forecasts.append(RawMeasurement(glucose: glucoses[i], timestamp: measurements.last!.timestamp + times[i]*60, foodImpact: 0, isGenerated: true))
+        }
+//        let newValue = predict + measurements.last!.glucose.value
+//        print("last value:", measurements.last!.glucose.value)
+//        let glucose = GlucoseData(unit: "mmol/L", value: newValue)
+//        let forecasted = RawMeasurement(glucose: glucose, timestamp: measurements.last!.timestamp + minutes*60, foodImpact: 0)
+//        print("forecast:", forecasted)
+//        print(model.model.modelDescription.inputDescriptionsByName.keys)
+//        print("lags", lags)
+//        print("timeToPredict", minutes)
+//        print("velocity_1", velocities[0])
+//        print("velocity_2", velocities[1])
+//        print("acceleration", acceleration)
+//        print("meanRecent", meanRecent)
+//        print("isFemale", isFemale)
+//        print("isDiabet", isDiabet)
+//        print("foodImpact", foodImpact)
+        print(forecasts)
+        return forecasts
     }
 }
 

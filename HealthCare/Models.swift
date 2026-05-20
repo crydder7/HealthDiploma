@@ -76,11 +76,22 @@ struct GlucoseData: Codable {
 struct RawMeasurement: Codable, Identifiable {
     let glucose: GlucoseData
     var timestamp: Int
+    var foodImpact: Double
+    var isGenerated: Bool = false
     var id = UUID()
+    
+//    init(glucose: GlucoseData, timestamp: Int, foodImpact: Double, isGenerated: Bool = false, id: UUID = UUID()) {
+//        self.glucose = glucose
+//        self.timestamp = timestamp
+//        self.foodImpact = foodImpact
+//        self.isGenerated = isGenerated
+//        self.id = id
+//    }
     
     enum CodingKeys: String, CodingKey{
         case glucose = "glucose"
         case timestamp = "timestamp"
+        case foodImpact = "foodImpact"
     }
 }
 

@@ -62,9 +62,9 @@ struct ChartView: View {
                 
                 Button {
                     //TODO: - Integrate all funcs to .forecast function
-                    forecastingViewModel = ModelPredictViewModel(measurements: chartData)
+                    forecastingViewModel = ModelPredictViewModel(userId: patient.user.id, measurements: chartData)
                     do {
-                        try forecastedData.append(forecastingViewModel!.forecast(minutes: 5))
+                        try forecastedData.append(contentsOf: forecastingViewModel!.forecast(minutes: 5))
                     } catch {
                         showAlert = true
                         alerText = "Сначала нажмте кнопку слева для получения данных"

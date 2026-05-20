@@ -14,6 +14,9 @@ struct ProfileView: View {
     @EnvironmentObject var router: Router
     @State var isPresented: Bool = false
     @State var alertText: String = ""
+    @State var height: String = ""
+    @State var weight: String = ""
+    @FocusState private var isInputFocused: Bool
     
     var body: some View {
         VStack{
@@ -25,14 +28,54 @@ struct ProfileView: View {
                     UIPasteboard.general.string = user.userdata?.id
                     isPresented = true
                     if user.userdata?.role == .doctor {
-                        alertText = "Никому не разглашайте свой ID!"
+                        alertText = "Ваш ID скопирован!\nНикому не разглашайте свой ID!"
                     } else if user.userdata?.role == .patient {
-                        alertText = "Отправьте его только своему врачу!"
+                        alertText = "Ваш ID скопирован!\nОтправьте его только своему врачу!"
                     }
                 }
-                .alert(isPresented: $isPresented) {
-                    Alert(title: Text("Ваш ID скопирован"), message: Text(alertText))
+            
+            if user.userdata?.role == .patient{
+                HStack{
+                    Text("Height")
+                    TextField("Height", text: $height)
+                        .focused($isInputFocused)
+                        .padding()
+                        .glassEffect()
+                        .keyboardType(.numberPad)
+                    Text("centimeters")
                 }
+                .padding()
+                HStack{
+                    Text("Weight")
+                    TextField("Weight", text: $weight)
+                        .focused($isInputFocused)
+                        .padding()
+                        .glassEffect()
+                        .keyboardType(.numberPad)
+                    
+                    Text("kilograms")
+                }
+                .padding()
+                Button {
+                    let patVM = PatientViewModel(user: user.userdata)
+                    Task{
+                        do{
+                            try await patVM?.uploadHeightWeight(height: height, weight: weight)
+                            isPresented = true
+                            alertText = "Data was upload!"
+                        } catch{
+                            isPresented = true
+                            alertText = error.localizedDescription
+                        }
+                    }
+                } label: {
+                    Text("Upload data")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 30)
+                }
+                .glassEffect()
+                .padding()
+            }
             
             Spacer()
             
@@ -59,7 +102,15 @@ struct ProfileView: View {
                 .glassEffect()
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            isInputFocused = false
+        }
         .padding()
+        .alert(isPresented: $isPresented) {
+            Alert(title: Text(alertText))
+        }
     }
 }
 

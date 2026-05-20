@@ -20,7 +20,6 @@ struct DoctorChartView: View {
     @State var showAlert: Bool = false
     @State var alerText: String = ""
     @EnvironmentObject var pickedPatient: PickedPatient
-//    @State private var loadingTask: Task<Void, Never>?
     @State private var selectedTime: Date?
     @State private var selectedGlucose: Double?
     
@@ -51,6 +50,8 @@ struct DoctorChartView: View {
                     pickedPatient.birthday = newPat[0].birthday
                     pickedPatient.email = newPat[0].email
                     pickedPatient.phone = newPat[0].phone
+                    pickedPatient.height = newPat[0].height
+                    pickedPatient.weight = newPat[0].weight
                 })
                 .pickerStyle(.automatic)
                 

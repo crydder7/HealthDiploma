@@ -60,6 +60,8 @@ class AuthViewModel: ObservableObject {
             try await db.collection("patientsData")
                 .document(uid)
                 .setData([
+                    "height": 0.0,
+                    "weight": 0.0,
                     "birthday": Timestamp(date: registrationData.birthday),
                     "gender": registrationData.gender
                 ])
@@ -198,6 +200,25 @@ class PatientViewModel: ObservableObject, UserProtocol {
         docInfo.email = data2["email"] as? String
         docInfo.phone = data2["phone"] as? String
     }
+    
+    func uploadHeightWeight(height: String, weight: String) async throws{
+        guard let height = Double(height) else { throw NSError(domain: "Error", code: 404, userInfo: [NSLocalizedDescriptionKey: "Incorrect height"]) }
+        guard let weight = Double(weight) else { throw NSError(domain: "Error", code: 404, userInfo: [NSLocalizedDescriptionKey: "Incorrect weight"]) }
+        let db = Firestore.firestore()
+        try await db.collection("patientsData").document(user.id)
+            .setData([
+                "height": height,
+                "weight": weight
+            ], merge: true)
+    }
+    
+//    func uploadWeight(weight: String) async throws{
+//        guard let weight = Double(weight) else { throw NSError(domain: "Error", code: 404, userInfo: [NSLocalizedDescriptionKey: "Incorrect weight"]) }
+//        let db = Firestore.firestore()
+//        try await db.collection("patientsData").document(user.id)
+//            .setData([], merge: <#T##Bool#>)
+//    }
+    
 }
 
 class DoctorViewModel: ObservableObject, UserProtocol{
@@ -246,7 +267,9 @@ class DoctorViewModel: ObservableObject, UserProtocol{
                 let gender = data2["gender"] as? String ?? " "
                 let email = data["email"] as? String ?? " "
                 let phone = data["phone"] as? String ?? " "
-                let patient = DoctorPatientDisplay(fullName: fullName, uid: i, birthday: "\(components.day ?? 0)/\(components.month ?? 0)/\(components.year ?? 0)", gender: gender, phone: phone, email: email)
+                let height = data2["height"] as? Double ?? 0
+                let weight = data2["weight"] as? Double ?? 0
+                let patient = DoctorPatientDisplay(fullName: fullName, uid: i, birthday: "\(components.day ?? 0)/\(components.month ?? 0)/\(components.year ?? 0)", gender: gender, phone: phone, email: email, height: height, weight: weight)
                 
                 self.patients.append(patient)
             } catch {
@@ -432,6 +455,8 @@ struct DoctorPatientDisplay: Hashable, Identifiable{
     var gender: String?
     var phone: String?
     var email: String?
+    var height: Double?
+    var weight: Double?
 }
 
 class PickedPatient: ObservableObject, Identifiable{
@@ -442,14 +467,18 @@ class PickedPatient: ObservableObject, Identifiable{
     @Published var gender: String?
     @Published var phone: String?
     @Published var email: String?
+    @Published var height: Double?
+    @Published var weight: Double?
      
-    init(fullName: String, uid: String, birthday: String? = nil, gender: String? = nil, phone: String? = nil, email: String? = nil) {
+    init(fullName: String, uid: String, birthday: String? = nil, gender: String? = nil, phone: String? = nil, email: String? = nil, height: Double?, weight: Double?) {
         self.fullName = fullName
         self.uid = uid
         self.birthday = birthday
         self.gender = gender
         self.phone = phone
         self.email = email
+        self.height = height
+        self.weight = weight
     }
 }
 

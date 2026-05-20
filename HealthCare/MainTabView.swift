@@ -10,7 +10,7 @@ import SwiftUI
 struct MainTabView: View {
     @EnvironmentObject var user: AppUser
     @State var selectedTab = 1
-    @StateObject var pickedPatient: PickedPatient = PickedPatient(fullName: "NONAME", uid: "", birthday: "", gender: "")
+    @StateObject var pickedPatient: PickedPatient = PickedPatient(fullName: "NONAME", uid: "", birthday: "", gender: "", height: nil, weight: nil)
     @StateObject var docInfo: DoctorInfo = DoctorInfo(fullName: "NONAME")
     
     var body: some View {

@@ -60,6 +60,12 @@ struct DoctorInfoView: View {
                     Divider()
                     LabeledContent("Birthday", value: pickedPatient.birthday ?? "-")
                         .font(.title3)
+                    Divider()
+                    LabeledContent("Height", value: "\(pickedPatient.height, default: "-")")
+                        .font(.title3)
+                    Divider()
+                    LabeledContent("Weight", value: "\(pickedPatient.weight, default: "-")")
+                        .font(.title3)
                 }
                 .padding(.horizontal)
             } else {

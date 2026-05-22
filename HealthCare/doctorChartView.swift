@@ -114,11 +114,14 @@ struct DoctorChartView: View {
                 
                 Button {
                     forecastingViewModel = ModelPredictViewModel(userId: uid!, measurements: chartData)
-                    do {
-                        try forecastedData.append(contentsOf: forecastingViewModel!.forecast(minutes: 5))
-                    } catch {
-                        showAlert = true
-                        alerText = "Нет данных для предсказания"
+                    Task{
+                        do {
+                            try await forecastedData.append(contentsOf: forecastingViewModel!.forecast(minutes: 5))
+                        }
+                        catch {
+                            showAlert = true
+                            alerText = "Нет данных для предсказания"
+                        }
                     }
                 } label: {
                     Label("Generate forecast", systemImage: "play.fill")

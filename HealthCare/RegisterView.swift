@@ -19,6 +19,7 @@ struct RegisterView: View {
     @State var isVerifyEmailAlert: Bool = false
     @State var sexValues: [String] = ["Male", "Female"]
     @State var isLoading: Bool = false
+    @FocusState var isFocused: Bool
     private var isPhoneValid: Bool {
         phoneNumber.count == phoneDigitsLimit
     }
@@ -33,33 +34,38 @@ struct RegisterView: View {
             Spacer()
             GlassEffectContainer{
                 TextField("Enter your name", text: $name)
+                    .focused($isFocused)
                     .padding()
                     .glassEffect()
                     .autocorrectionDisabled()
                 TextField("Enter your surname", text: $surname)
+                    .focused($isFocused)
                     .padding()
                     .glassEffect()
                     .autocorrectionDisabled()
                 TextField("Enter your thirdname", text: $thirdname)
+                    .focused($isFocused)
                     .padding()
                     .glassEffect()
                     .autocorrectionDisabled()
                 TextField("Enter your phone number", text: $phoneNumber)
+                    .focused($isFocused)
                     .padding()
                     .keyboardType(.numberPad)
                     .autocorrectionDisabled()
                     .onChange(of: phoneNumber, { oldValue, newValue in
                         phoneNumber = sanitizePhoneNumber(newValue)
                     })
-                    .border(.foreground, width: isPhoneValid ? 0 : 1)
                     .glassEffect()
+                    .border(.red, width: isPhoneValid ? 0 : 1)
                 TextField("Enter your e-mail adress", text: $email)
+                    .focused($isFocused)
                     .padding()
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .border(.red, width: validateMail(email) ? 0 : 1)
                     .glassEffect()
+                    .border(.red, width: validateMail(email) ? 0 : 1)
                 Picker("Gender", selection: $gender) {
                     ForEach(sexValues, id: \.self){ sex in
                         Text(sex).tag(sex)
@@ -69,11 +75,13 @@ struct RegisterView: View {
                 DatePicker("Select your birthdate", selection: $birth, displayedComponents: .date)
                     .datePickerStyle(.compact)
                 SecureField("Enter your password", text: $password)
+                    .focused($isFocused)
                     .padding()
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .glassEffect()
                 SecureField("Confirm your password", text: $passwordConfirmation)
+                    .focused($isFocused)
                     .padding()
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
@@ -114,6 +122,11 @@ struct RegisterView: View {
                     Alert(title: Text(alertText))
                 }
             }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            isFocused = false
         }
         .padding()
     }

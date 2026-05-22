@@ -15,6 +15,7 @@ struct LoginView: View {
 //    @ObservedObject var viewController = ViewController.shared
     @EnvironmentObject var router: Router
     @State var isLoading: Bool = false
+    @FocusState var isFocused: Bool
 //    @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
@@ -28,6 +29,7 @@ struct LoginView: View {
             
             GlassEffectContainer{
                 TextField("Enter your email", text: $email)
+                    .focused($isFocused)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -35,6 +37,7 @@ struct LoginView: View {
                     .glassEffect()
                 
                 SecureField("Enter your password", text: $password)
+                    .focused($isFocused)
                     .autocorrectionDisabled()
                     .padding()
                     .glassEffect()
@@ -82,6 +85,11 @@ struct LoginView: View {
                 .padding()
                 
             }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            isFocused = false
         }
         .padding()
         .overlay {

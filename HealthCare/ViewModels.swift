@@ -307,15 +307,18 @@ class ModelPredictViewModel: ObservableObject {
     
     @Published var measurements: [RawMeasurement]
     @Published var userId: String = ""
-    private var lags: [Double] = [0, 0, 0, 0, 0, 0, 0]
-    private var velocities: [Double] = [0, 0]
-    private var acceleration: Double = 0
-    private var meanRecent: Double = 0
-    private var isFemale: Double = 0
-    private var isDiabet: Double = 0
-    private var foodImpact: Double = 0
-    var cfg = MLModelConfiguration()
-    private var model = delta_model()
+    private var lags: [Float] = [0, 0, 0, 0, 0, 0, 0]
+    private var velocity: Float = 0
+    private var meanRecent: Float = 0
+    private var isFemale: Float = 0
+    private var isDiabet: Float = 0
+    private var foodImpact: Float = 0
+    private var height: Float = 0
+    private var weight: Float = 0
+    private var weight_missing: Float = 0
+    private var height_missing: Float = 0
+    private var time: Float = 0
+    private var model = try? glucose_mlp(configuration: MLModelConfiguration())
     
     
     init(userId: String, measurements: [RawMeasurement]) {
@@ -336,27 +339,28 @@ class ModelPredictViewModel: ObservableObject {
         let minutesPrev = prevTime.components(separatedBy: ":").map { Int($0)! }.reduce(0, { $0*60 + $1 })
         
         let diff = minutesPrev - minutesLast
-        var minutes = [minutesLast, 0, 0, 0, 0, minutesPrev]
-//        
+        var minutes = [minutesLast, 0, 0, 0, 0, 0, minutesPrev]
+//
 //        if diff > 45 {
 //            //TODO: - Evaluate lags for big time gap
 //            
 //        } else {
         
-            let points: Int = diff/5
-            for i in 1...4{
+            let points: Int = diff/6
+            for i in 1...5{
                 minutes[i] = minutes[i-1] + points
             }
-            self.lags[0] = (last?.glucose.value)!
-            self.lags[5] = prev.glucose.value
-            for i in 1...4 {
+            self.lags[0] = Float((last?.glucose.value)!)
+            self.time = Float(minutesLast)
+            self.lags[6] = Float(prev.glucose.value)
+            for i in 1...5 {
                 let numerator = Double(minutes[i] - minutes[i - 1])
-                let denominator = Double(minutes[5] - minutes[i])
+                let denominator = Double(minutes[6] - minutes[i])
                 
                 guard denominator != 0 else { continue }
                 
-                let x = numerator / denominator
-                let y = (lags[5] - lags[i - 1]) * x
+                let x = Float(numerator / denominator)
+                let y = (lags[6] - lags[i - 1]) * x
                 lags[i] = lags[i - 1] + y
 //                let x: Double = Double((minutes[i] - minutes[i-1]) / (minutes[5] - minutes[i]))
 //                let y = (lags[5] - lags[i-1]) * x
@@ -381,51 +385,88 @@ class ModelPredictViewModel: ObservableObject {
     }
     
     func createVelocity(){
-        velocities[0] = lags[0] - lags[1]
-        velocities[1] = lags[1] - lags[2]
-    }
-    
-    func createAcceleration(){
-        acceleration = velocities[0] - velocities[1]
+        velocity = lags[0] - lags[1]
     }
     
     func createMeanRecent(){
         meanRecent = (lags[0] + lags[1] + lags[2]) / 3
     }
     
-    func forecast(minutes: Int) throws -> [RawMeasurement] {
+    func getHeightWeight() async throws {
+        let db = Firestore.firestore()
+        let snapshot = try await db.collection("patientsData").document(userId)
+            .getDocument()
+        if let height = snapshot.data()?["height"] as? Float{
+            self.height = height
+        } else {
+            self.height = 175
+            self.height_missing = 1
+        }
+        if let weight = snapshot.data()?["weight"] as? Float{
+            self.weight = weight
+        } else {
+            self.weight = 75
+            self.weight_missing = 1
+        }
+    }
+    
+    
+    func forecast(minutes: Int) async throws -> [RawMeasurement] {
         guard measurements.count > 1 else { throw NSError(domain: "", code: 404, userInfo: [NSLocalizedDescriptionKey: "Some error, try again later"])}
 //        TODO: - CHANGE isDiabet to variable from firebase
+        try await getHeightWeight()
+        try await getSex()
         self.isDiabet = 0
-        Task {
-            try await getSex()
-        }
-        .escalatePriority(to: .high)
+        self.foodImpact = Float(measurements.last!.foodImpact)
+        var forecasts = [RawMeasurement]()
         createLags()
         createVelocity()
-        createAcceleration()
         createMeanRecent()
         var predict = [Double]()
         do {
             for i in [5, 10, 15, 30]{
-                let p = try model.prediction(lag_1: lags[0], lag_2: lags[1], lag_3: lags[2], lag_4: lags[3], lag_5: lags[4], lag_6: lags[5], timeToPredict: Double(i), velocity_1: velocities[0], velocity_2: velocities[1], acceleration: acceleration, meanRecent: meanRecent, isFemale: self.isFemale, isDiabet: self.isDiabet, foodImpact: measurements.last?.foodImpact ?? 0)
-                predict.append(p.predicted_delta)
+//                let p = try model.prediction(lag_1: lags[0], lag_2: lags[1], lag_3: lags[2], lag_4: lags[3], lag_5: lags[4], lag_6: lags[5], timeToPredict: Double(i), velocity_1: velocities[0], velocity_2: velocities[1], acceleration: acceleration, meanRecent: meanRecent, isFemale: self.isFemale, isDiabet: self.isDiabet, foodImpact: measurements.last?.foodImpact ?? 0)
+//                let p = try model.prediction(lags_0: lags[0], lags_1: lags[1], lags_2: lags[2], lags_3: lags[3], lags_4: lags[4], lags_5: lags[5], lags_6: lags[6], velocities_0: velocity, mean_recent: meanRecent, sex_male: isFemale, isDiabet: isDiabet, foodImpact: measurements.last?.foodImpact ?? 0, weight: weight, height: height, weight_missing: weight_missing, height_missing: height_missing, horizon_minutes: Double(i))
+                let inputArray = try MLMultiArray(shape: [1, 18], dataType: .float32)
+                let vals: [Float] = [
+                    lags[0],lags[1],lags[2],lags[3],lags[4],lags[5],lags[6],velocity, meanRecent, isFemale, isDiabet, foodImpact, weight, height, weight_missing, height_missing, time, Float(i)
+                ]
+                for (i, v) in vals.enumerated() {
+                    inputArray[i] = NSNumber(value: v)
+                }
+                
+                let inp = glucose_mlpInput(flat: inputArray)
+                print(inp.flat)
+//                let input = try MLFeatureValue(multiArray: inputArray)
+//                let provider = try MLDictionaryFeatureProvider(dictionary: ["flat": input])
+                let p = try await model?.prediction(input: inp)
+                
+                let p1 = p?.delta[0] as? Double ?? 0
+//                let output = try model.prediction(from: provider)
+//                let delta = output.featureValue(for: "delta")?.multiArrayValue?[0] ?? 0
+//                let glucose = lags[0] + delta.floatValue
+                print(p?.delta)
+                predict.append(p1)
             }
+        
 //            let p = try model.prediction(lag_1: lags[0], lag_2: lags[1], lag_3: lags[2], lag_4: lags[3], lag_5: lags[4], lag_6: lags[5], timeToPredict: Double(minutes), velocity_1: velocities[0], velocity_2: velocities[1], acceleration: acceleration, meanRecent: meanRecent, isFemale: self.isFemale, isDiabet: self.isDiabet, foodImpact: measurements.last?.foodImpact ?? 0)
 //            predict = p.predicted_delta
-        } catch  {
+            } catch  {
+                
+            }
+            let times = [5,10,15,30]
             
-        }
-        let times = [5,10,15,30]
-        var forecasts = [RawMeasurement]()
-        var glucoses = [GlucoseData]()
-        for i in 0...3{
-            predict[i] = predict[i] + measurements.last!.glucose.value
-            glucoses.append(GlucoseData(unit: "mmol/L", value: predict[i]))
-        }
-        for i in 0...3{
-            forecasts.append(RawMeasurement(glucose: glucoses[i], timestamp: measurements.last!.timestamp + times[i]*60, foodImpact: 0, isGenerated: true))
-        }
+            var glucoses = [GlucoseData]()
+            for i in 0...3{
+                predict[i] = predict[i] + measurements.last!.glucose.value
+                glucoses.append(GlucoseData(unit: "mmol/L", value: predict[i]))
+            }
+            for i in 0...3{
+                forecasts.append(RawMeasurement(glucose: glucoses[i], timestamp: measurements.last!.timestamp + times[i]*60, foodImpact: 0, isGenerated: true))
+            }
+            
+        
+        
 //        let newValue = predict + measurements.last!.glucose.value
 //        print("last value:", measurements.last!.glucose.value)
 //        let glucose = GlucoseData(unit: "mmol/L", value: newValue)
@@ -441,7 +482,7 @@ class ModelPredictViewModel: ObservableObject {
 //        print("isFemale", isFemale)
 //        print("isDiabet", isDiabet)
 //        print("foodImpact", foodImpact)
-        print(forecasts)
+//        print(forecasts)
         return forecasts
     }
 }

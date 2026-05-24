@@ -436,7 +436,6 @@ class ModelPredictViewModel: ObservableObject {
                 }
                 
                 let inp = glucose_mlpInput(flat: inputArray)
-                print(inp.flat)
 //                let input = try MLFeatureValue(multiArray: inputArray)
 //                let provider = try MLDictionaryFeatureProvider(dictionary: ["flat": input])
                 let p = try await model?.prediction(input: inp)
@@ -445,7 +444,6 @@ class ModelPredictViewModel: ObservableObject {
 //                let output = try model.prediction(from: provider)
 //                let delta = output.featureValue(for: "delta")?.multiArrayValue?[0] ?? 0
 //                let glucose = lags[0] + delta.floatValue
-                print(p?.delta)
                 predict.append(p1)
             }
         
@@ -455,7 +453,7 @@ class ModelPredictViewModel: ObservableObject {
                 
             }
             let times = [5,10,15,30]
-            
+//            forecasts.append(measurements.last!)
             var glucoses = [GlucoseData]()
             for i in 0...3{
                 predict[i] = predict[i] + measurements.last!.glucose.value

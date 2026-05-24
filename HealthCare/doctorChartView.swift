@@ -65,22 +65,27 @@ struct DoctorChartView: View {
                 .buttonStyle(.glass)
                 
             }
-//            Chart(forecastedData) { measure in
-//                LineMark(x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))) , y: .value("glucose", Double(measure.glucose.value)))
-//                    .symbol(.circle)
-//                    .foregroundStyle(measure.isGenerated ? .red : .blue)
-//            }
+            
             Chart {
                 ForEach(forecastedData) { measure in
                     LineMark(
                         x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
                         y: .value("glucose", Double(measure.glucose.value))
                     )
-                    .foregroundStyle(measure.isGenerated ? .red : .blue)
+                    .foregroundStyle(.red)
                     .lineStyle(measure.isGenerated ? StrokeStyle.init(lineWidth: 0.5) : StrokeStyle.init(lineWidth: 1))
                     .symbol(.circle)
                     
                 }
+//                ForEach(chartData) { measure in
+//                    LineMark(
+//                        x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
+//                        y: .value("glucose", Double(measure.glucose.value))
+//                    )
+//                    .foregroundStyle(.blue)
+//                    .lineStyle(measure.isGenerated ? StrokeStyle.init(lineWidth: 0.5) : StrokeStyle.init(lineWidth: 1))
+//                    .symbol(.circle)
+//                }
             }
             .chartXAxis(.visible)
             .chartYAxis(.visible)
@@ -128,9 +133,6 @@ struct DoctorChartView: View {
                 }
                 .padding()
                 .glassEffect()
-//                .alert(isPresented: $showAlert){
-//                    Alert(title: Text(alerText) )
-//                }
             }
             
         }

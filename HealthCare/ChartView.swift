@@ -27,15 +27,46 @@ struct ChartView: View {
             .datePickerStyle(.automatic)
             
             Chart(forecastedData) { measure in
-                LineMark(x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))) , y: .value("glucose", Double(measure.glucose.value)))
-                    .symbol(.circle)
-                    .foregroundStyle(.red)
+                LineMark(
+                    x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
+                    y: .value("glucose", Double(measure.glucose.value))
+                )
+                .foregroundStyle(by: .value("Segment", measure.isGenerated))
+                .lineStyle(by: .value("Segment", measure.isGenerated))
+                
+                PointMark(
+                    x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
+                    y: .value("glucose", Double(measure.glucose.value))
+                )
+                .foregroundStyle(by: .value("Segment", measure.isGenerated))
             }
-            .chartXAxis(.visible)
-            .chartYAxis(.visible)
+            .chartForegroundStyleScale([
+                "actual":    .red,
+                "predicted": .blue
+            ])
+            .chartLineStyleScale([
+                "actual":    StrokeStyle(lineWidth: 2),
+                "predicted": StrokeStyle(lineWidth: 2, dash: [5, 3])
+            ])
+            .chartYScale(domain: 0...15)
+            .chartXScale(domain: forecastedData.isEmpty ? Date(timeIntervalSince1970: 0)...Date(timeIntervalSince1970: 670) : Date(timeIntervalSince1970: TimeInterval(forecastedData[0].timestamp))...Date(timeIntervalSince1970: TimeInterval(forecastedData.last!.timestamp)))
+            .chartYAxis {
+                AxisMarks(values: .stride(by: 1.0)) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel()
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .minute, count: 30)) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(format: .dateTime.hour().minute())
+                }
+            }
             .chartScrollableAxes(.horizontal)
             .padding()
-            .border(.black, width: 2.0)
+//            .border(.black, width: 2.0)
             
             
             HStack{

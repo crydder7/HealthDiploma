@@ -13,9 +13,13 @@ struct ProfileView: View {
     @ObservedObject var auth: AuthViewModel = AuthViewModel()
     @EnvironmentObject var router: Router
     @State var isPresented: Bool = false
+    @State var isPresentedHeight: Bool = false
+    @State var isPresentedWeight: Bool = false
     @State var alertText: String = ""
     @State var height: String = ""
     @State var weight: String = ""
+    @State var newHeight: String = ""
+    @State var neWeight: String = ""
     @FocusState private var isInputFocused: Bool
     
     var body: some View {
@@ -37,44 +41,106 @@ struct ProfileView: View {
             if user.userdata?.role == .patient{
                 HStack{
                     Text("Height")
-                    TextField("Height", text: $height)
-                        .focused($isInputFocused)
-                        .padding()
-                        .glassEffect()
-                        .keyboardType(.numberPad)
+//                    TextField("Height", text: $height)
+//                        .focused($isInputFocused)
+//                        .padding()
+//                        .glassEffect()
+//                        .keyboardType(.numberPad)
+                    Label(height, systemImage: "square.and.pencil")
+                        .foregroundStyle(.blue)
+                        .onTapGesture {
+                            isPresentedHeight = true
+                        }
+                        .alert("Введите новый рост", isPresented: $isPresentedHeight) {
+                            TextField("Height", text: $newHeight)
+                                .padding()
+                                .glassEffect()
+                                .keyboardType(.numberPad)
+                                Button {
+                                    let patVM = PatientViewModel(user: user.userdata)
+                                    Task{
+                                        do{
+                                            try await patVM?.uploadHeight(newHeight)
+                                            isPresented = true
+                                            alertText = "Height was upload!"
+                                            height = newHeight
+                                        } catch{
+                                            isPresented = true
+                                            alertText = error.localizedDescription
+                                        }
+                                    }
+                                } label: {
+                                    Text("Upload data")
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 30)
+                                }
+                                .glassEffect()
+                                .padding()
+                
+                        }
                     Text("centimeters")
                 }
                 .padding()
                 HStack{
                     Text("Weight")
-                    TextField("Weight", text: $weight)
-                        .focused($isInputFocused)
-                        .padding()
-                        .glassEffect()
-                        .keyboardType(.numberPad)
-                    
+//                    TextField("Weight", text: $weight)
+//                        .focused($isInputFocused)
+//                        .padding()
+//                        .glassEffect()
+//                        .keyboardType(.numberPad)
+                    Label(weight, systemImage: "square.and.pencil")
+                        .foregroundStyle(.blue)
+                        .onTapGesture {
+                            isPresentedWeight = true
+                        }
+                        .alert("Введите новый вес", isPresented: $isPresentedWeight) {
+                            TextField("Weight", text: $neWeight)
+                                .padding()
+                                .glassEffect()
+                                .keyboardType(.numberPad)
+                                Button {
+                                    let patVM = PatientViewModel(user: user.userdata)
+                                    Task{
+                                        do{
+                                            try await patVM?.uploadWeight(neWeight)
+                                            isPresented = true
+                                            alertText = "Weight was upload!"
+                                            weight = neWeight
+                                        } catch{
+                                            isPresented = true
+                                            alertText = error.localizedDescription
+                                        }
+                                    }
+                                } label: {
+                                    Text("Upload data")
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 30)
+                                }
+                                .glassEffect()
+                                .padding()
+                        }
                     Text("kilograms")
                 }
                 .padding()
-                Button {
-                    let patVM = PatientViewModel(user: user.userdata)
-                    Task{
-                        do{
-                            try await patVM?.uploadHeightWeight(height: height, weight: weight)
-                            isPresented = true
-                            alertText = "Data was upload!"
-                        } catch{
-                            isPresented = true
-                            alertText = error.localizedDescription
-                        }
-                    }
-                } label: {
-                    Text("Upload data")
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 30)
-                }
-                .glassEffect()
-                .padding()
+//                Button {
+//                    let patVM = PatientViewModel(user: user.userdata)
+//                    Task{
+//                        do{
+//                            try await patVM?.uploadHeightWeight(height: height, weight: weight)
+//                            isPresented = true
+//                            alertText = "Data was upload!"
+//                        } catch{
+//                            isPresented = true
+//                            alertText = error.localizedDescription
+//                        }
+//                    }
+//                } label: {
+//                    Text("Upload data")
+//                        .frame(maxWidth: .infinity)
+//                        .frame(height: 30)
+//                }
+//                .glassEffect()
+//                .padding()
             }
             
             Spacer()
@@ -110,6 +176,18 @@ struct ProfileView: View {
         .padding()
         .alert(isPresented: $isPresented) {
             Alert(title: Text(alertText))
+        }
+        .task {
+            if user.userdata?.role == .patient{
+                let patientVM = PatientViewModel(user: user.userdata)
+                do {
+                    let data = try await patientVM?.getHeightWeight()
+                    height = data?.0 ?? "-"
+                    weight = data?.1 ?? "-"
+                } catch{
+                    alertText = error.localizedDescription
+                }
+            }
         }
     }
 }

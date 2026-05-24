@@ -20,8 +20,7 @@ struct DoctorChartView: View {
     @State var showAlert: Bool = false
     @State var alerText: String = ""
     @EnvironmentObject var pickedPatient: PickedPatient
-    @State private var selectedTime: Date?
-    @State private var selectedGlucose: Double?
+    
     
     var body: some View {
         VStack{
@@ -66,32 +65,46 @@ struct DoctorChartView: View {
                 
             }
             
-            Chart {
-                ForEach(forecastedData) { measure in
-                    LineMark(
-                        x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
-                        y: .value("glucose", Double(measure.glucose.value))
-                    )
-                    .foregroundStyle(.red)
-                    .lineStyle(measure.isGenerated ? StrokeStyle.init(lineWidth: 0.5) : StrokeStyle.init(lineWidth: 1))
-                    .symbol(.circle)
-                    
-                }
-//                ForEach(chartData) { measure in
-//                    LineMark(
-//                        x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
-//                        y: .value("glucose", Double(measure.glucose.value))
-//                    )
-//                    .foregroundStyle(.blue)
-//                    .lineStyle(measure.isGenerated ? StrokeStyle.init(lineWidth: 0.5) : StrokeStyle.init(lineWidth: 1))
-//                    .symbol(.circle)
-//                }
+            Chart(forecastedData) {measure in
+                LineMark(
+                    x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
+                    y: .value("glucose", Double(measure.glucose.value))
+                )
+                .foregroundStyle(by: .value("Segment", measure.isGenerated))
+                .lineStyle(by: .value("Segment", measure.isGenerated))
+                
+                PointMark(
+                    x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
+                    y: .value("glucose", Double(measure.glucose.value))
+                )
+                .foregroundStyle(by: .value("Segment", measure.isGenerated))
             }
-            .chartXAxis(.visible)
-            .chartYAxis(.visible)
+            .chartForegroundStyleScale([
+                "actual":    .red,
+                "predicted": .blue
+            ])
+            .chartLineStyleScale([
+                "actual":    StrokeStyle(lineWidth: 2),
+                "predicted": StrokeStyle(lineWidth: 2, dash: [5, 3])
+            ])
+            .chartYScale(domain: 0...15)
+            .chartXScale(domain: forecastedData.isEmpty ? Date(timeIntervalSince1970: 0)...Date(timeIntervalSince1970: 670) : Date(timeIntervalSince1970: TimeInterval(forecastedData[0].timestamp))...Date(timeIntervalSince1970: TimeInterval(forecastedData.last!.timestamp)))
+            .chartYAxis {
+                AxisMarks(values: .stride(by: 1.0)) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel()
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .minute, count: 30)) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(format: .dateTime.hour().minute())
+                }
+            }
             .chartScrollableAxes(.horizontal)
             .padding()
-            
             
             HStack{
                 Button {
@@ -141,14 +154,17 @@ struct DoctorChartView: View {
             Alert(title: Text(alerText))
         }
         .task({
-            self.patients = []
-            do{
-                self.patients = try await doctor.loadPatients()
-                if !self.patients.isEmpty{
-                    self.uid = patients[0].uid
+            if self.patients.isEmpty{
+                self.patients = []
+                do{
+                    self.patients = try await doctor.loadPatients()
+                    self.patients.sort { $0.fullName < $1.fullName }
+                    if !self.patients.isEmpty{
+                        self.uid = patients[0].uid
+                    }
+                } catch {
+                    
                 }
-            } catch {
-                
             }
         })
     }

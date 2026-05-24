@@ -201,15 +201,31 @@ class PatientViewModel: ObservableObject, UserProtocol {
         docInfo.phone = data2["phone"] as? String
     }
     
-    func uploadHeightWeight(height: String, weight: String) async throws{
+    func uploadHeight(_ height: String) async throws{
         guard let height = Double(height) else { throw NSError(domain: "Error", code: 404, userInfo: [NSLocalizedDescriptionKey: "Incorrect height"]) }
+        let db = Firestore.firestore()
+        try await db.collection("patientsData").document(user.id)
+            .setData([
+                "height": height
+            ], merge: true)
+    }
+    
+    func uploadWeight(_ weight: String)async throws{
         guard let weight = Double(weight) else { throw NSError(domain: "Error", code: 404, userInfo: [NSLocalizedDescriptionKey: "Incorrect weight"]) }
         let db = Firestore.firestore()
         try await db.collection("patientsData").document(user.id)
             .setData([
-                "height": height,
                 "weight": weight
             ], merge: true)
+    }
+    
+    func getHeightWeight() async throws ->(String, String){
+        let db = Firestore.firestore()
+        let snapshot = try await db.collection("patientsData").document(self.user.id)
+            .getDocument()
+        guard let data = snapshot.data(), let height = data["height"] as? Double, let weight = data["weight"] as? Double else { throw NSError(domain: "Error", code: 404, userInfo: [NSLocalizedDescriptionKey: "No data"])}
+        
+        return (String(height), String(weight))
     }
     
 //    func uploadWeight(weight: String) async throws{
@@ -460,7 +476,7 @@ class ModelPredictViewModel: ObservableObject {
                 glucoses.append(GlucoseData(unit: "mmol/L", value: predict[i]))
             }
             for i in 0...3{
-                forecasts.append(RawMeasurement(glucose: glucoses[i], timestamp: measurements.last!.timestamp + times[i]*60, foodImpact: 0, isGenerated: true))
+                forecasts.append(RawMeasurement(glucose: glucoses[i], timestamp: measurements.last!.timestamp + times[i]*60, foodImpact: 0, isGenerated: "predicted"))
             }
             
         

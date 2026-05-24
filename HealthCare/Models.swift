@@ -77,7 +77,7 @@ struct RawMeasurement: Codable, Identifiable {
     let glucose: GlucoseData
     var timestamp: Int
     var foodImpact: Double
-    var isGenerated: Bool = false
+    var isGenerated: String = "actual"
     var id = UUID()
     
 //    init(glucose: GlucoseData, timestamp: Int, foodImpact: Double, isGenerated: Bool = false, id: UUID = UUID()) {
@@ -94,7 +94,6 @@ struct RawMeasurement: Codable, Identifiable {
         case foodImpact = "foodImpact"
     }
 }
-
 
 func loadUser() -> UserData? {
     if let data = UserDefaults.standard.data(forKey: "user") {

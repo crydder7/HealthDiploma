@@ -40,7 +40,7 @@ struct ProfileView: View {
             
             if user.userdata?.role == .patient{
                 HStack{
-                    Text("Height")
+                    Text("Your height")
 //                    TextField("Height", text: $height)
 //                        .focused($isInputFocused)
 //                        .padding()
@@ -82,7 +82,7 @@ struct ProfileView: View {
                 }
                 .padding()
                 HStack{
-                    Text("Weight")
+                    Text("Your weight")
 //                    TextField("Weight", text: $weight)
 //                        .focused($isInputFocused)
 //                        .padding()

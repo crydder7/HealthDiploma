@@ -131,7 +131,12 @@ struct DoctorChartView: View {
                 .glassEffect()
                 
                 Button {
-                    forecastingViewModel = ModelPredictViewModel(userId: uid!, measurements: chartData)
+                    guard let uid = uid else {
+                        showAlert = true
+                        alerText = "Нет данных для предсказания"
+                        return
+                    }
+                    forecastingViewModel = ModelPredictViewModel(userId: uid, measurements: chartData)
                     Task{
                         do {
                             try await forecastedData.append(contentsOf: forecastingViewModel!.forecast(minutes: 5))

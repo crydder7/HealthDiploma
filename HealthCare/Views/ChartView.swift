@@ -66,8 +66,6 @@ struct ChartView: View {
             }
             .chartScrollableAxes(.horizontal)
             .padding()
-//            .border(.black, width: 2.0)
-            
             
             HStack{
                 Button {
@@ -108,9 +106,6 @@ struct ChartView: View {
                 }
                 .padding()
                 .glassEffect()
-//                .alert(isPresented: $showAlert){
-//                    Alert(title: Text("Нет данных для предсказания"), message: Text(alerText))
-//                }
             }
             
         }

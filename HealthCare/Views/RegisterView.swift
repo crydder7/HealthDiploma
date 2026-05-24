@@ -57,7 +57,11 @@ struct RegisterView: View {
                         phoneNumber = sanitizePhoneNumber(newValue)
                     })
                     .glassEffect()
-                    .border(.red, width: isPhoneValid ? 0 : 1)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 25)
+                            .stroke(.red, lineWidth: isPhoneValid ? 0 : 1)
+                    }
+                
                 TextField("Enter your e-mail adress", text: $email)
                     .focused($isFocused)
                     .padding()
@@ -65,7 +69,10 @@ struct RegisterView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .glassEffect()
-                    .border(.red, width: validateMail(email) ? 0 : 1)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 25)
+                            .stroke(.red, lineWidth: validateMail(email) ? 0 : 1)
+                    }
                 Picker("Gender", selection: $gender) {
                     ForEach(sexValues, id: \.self){ sex in
                         Text(sex).tag(sex)
@@ -85,8 +92,11 @@ struct RegisterView: View {
                     .padding()
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                    .border(.red, width: password==passwordConfirmation ? 0 : 1)
                     .glassEffect()
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 25)
+                            .stroke(.red, lineWidth: password==passwordConfirmation ? 0 : 1)
+                    }
                 Spacer()
                 
                 Button {

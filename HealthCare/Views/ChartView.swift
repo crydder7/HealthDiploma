@@ -26,19 +26,27 @@ struct ChartView: View {
             }
             .datePickerStyle(.automatic)
             
-            Chart(forecastedData) { measure in
-                LineMark(
-                    x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
-                    y: .value("glucose", Double(measure.glucose.value))
-                )
-                .foregroundStyle(by: .value("Segment", measure.isGenerated))
-                .lineStyle(by: .value("Segment", measure.isGenerated))
+            Chart {
+                ForEach(forecastedData) { measure in
+                    LineMark(
+                        x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
+                        y: .value("glucose", Double(measure.glucose.value))
+                    )
+                    .foregroundStyle(by: .value("Segment", measure.isGenerated))
+                    .lineStyle(by: .value("Segment", measure.isGenerated))
+                    
+                    PointMark(
+                        x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
+                        y: .value("glucose", Double(measure.glucose.value))
+                    )
+                    .foregroundStyle(by: .value("Segment", measure.isGenerated))
+                }
                 
-                PointMark(
-                    x: .value("time", Date(timeIntervalSince1970: TimeInterval(measure.timestamp))),
-                    y: .value("glucose", Double(measure.glucose.value))
-                )
-                .foregroundStyle(by: .value("Segment", measure.isGenerated))
+                RuleMark(y: .value("High", 7.8))
+                    .foregroundStyle(.green)
+                
+                RuleMark(y: .value("Low", 3.3))
+                    .foregroundStyle(.green)
             }
             .chartForegroundStyleScale([
                 "actual":    .red,

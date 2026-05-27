@@ -41,11 +41,6 @@ struct ProfileView: View {
             if user.userdata?.role == .patient{
                 HStack{
                     Text("Your height")
-//                    TextField("Height", text: $height)
-//                        .focused($isInputFocused)
-//                        .padding()
-//                        .glassEffect()
-//                        .keyboardType(.numberPad)
                     Label(height, systemImage: "square.and.pencil")
                         .foregroundStyle(.blue)
                         .onTapGesture {
@@ -83,11 +78,6 @@ struct ProfileView: View {
                 .padding()
                 HStack{
                     Text("Your weight")
-//                    TextField("Weight", text: $weight)
-//                        .focused($isInputFocused)
-//                        .padding()
-//                        .glassEffect()
-//                        .keyboardType(.numberPad)
                     Label(weight, systemImage: "square.and.pencil")
                         .foregroundStyle(.blue)
                         .onTapGesture {
@@ -122,25 +112,6 @@ struct ProfileView: View {
                     Text("kilograms")
                 }
                 .padding()
-//                Button {
-//                    let patVM = PatientViewModel(user: user.userdata)
-//                    Task{
-//                        do{
-//                            try await patVM?.uploadHeightWeight(height: height, weight: weight)
-//                            isPresented = true
-//                            alertText = "Data was upload!"
-//                        } catch{
-//                            isPresented = true
-//                            alertText = error.localizedDescription
-//                        }
-//                    }
-//                } label: {
-//                    Text("Upload data")
-//                        .frame(maxWidth: .infinity)
-//                        .frame(height: 30)
-//                }
-//                .glassEffect()
-//                .padding()
             }
             
             Spacer()

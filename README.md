@@ -33,8 +33,8 @@
   <td align="center">Личный экран пользователя</td>
 </tr>
   <tr>
-    <td><img src="HealthCare/Assets.xcassets/mainView.png"></td>
-    <td><img src="HealthCare/Assets.xcassets/infoView.png"></td>
-    <td><img src="HealthCare/Assets.xcassets/profileView.png"></td>
+    <td><img src="HealthCare/Assets.xcassets/mainView.png" width="250"></td>
+    <td><img src="HealthCare/Assets.xcassets/infoView.png" width="250"></td>
+    <td><img src="HealthCare/Assets.xcassets/profileView.png" width="250"></td>
   </tr>
 </table>
